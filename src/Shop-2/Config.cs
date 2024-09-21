@@ -70,7 +70,7 @@ public class Lang
         {"BuyMessage14", "There are no free slots in the price chest"},
         {"BuyMessage15", "Purchase" },
         {"BuyMessage16", "For buying {0} {1}" },
-        {"BuyMessage17", "Successfully bought {0} [i/p{1}:{2}] for {3}" },
+        {"BuyMessage17", "Successfully bought {0} [i:{1}] for {2}" },
         {"BuyMessage18", "{0} bought {1} {2} for {3}" }
     };
 

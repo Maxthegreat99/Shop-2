@@ -72,6 +72,8 @@ public class Commands
             && (subCommand == Shop2.Configs.Settings.BuyItemsSubCommand
             || subCommand == "b"))
         {
+            Buy(args, region, acc);
+            return;
         }
     }
 
@@ -173,7 +175,6 @@ public class Commands
             i++;
 
             Item tItem = TShock.Utils.GetItemById(item.ItemID);
-            tItem.Prefix(item.Prefix);
 
             if (i == index || (inputName != null && (tItem.HoverName.ToLower().StartsWith(inputName.ToLower()) || tItem.Name.ToLower().StartsWith(inputName.ToLower()))))
             {
@@ -240,7 +241,7 @@ public class Commands
             
             if (searchedItem.Price * amount > acc.Balance)
             {
-                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i/p{0}:{1}]".SFormat(searchedItem.Prefix, searchedItem.ItemID), amount));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i/:{1}]".SFormat(searchedItem.ItemID), amount));
                 return;
             }
 
@@ -327,7 +328,7 @@ public class Commands
 
             if (searchedItem.Price * amount > acc.Balance)
             {
-                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i/p{0}:{1}]".SFormat(searchedItem.Prefix, searchedItem.ItemID), amount));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i:{1}]".SFormat(searchedItem.ItemID), amount));
                 return;
             }
 
@@ -390,8 +391,6 @@ public class Commands
 
             var tItem = TShock.Utils.GetItemById(searchedItem.ItemID);
 
-            tItem.Prefix(searchedItem.Prefix);
-
             double _slotsToFill = amount / tItem.maxStack;
             int slotsToFill = (int)Math.Ceiling(_slotsToFill);
             if (amount < tItem.maxStack)
@@ -403,7 +402,6 @@ public class Commands
                     amountToFill = amount - (l * tItem.maxStack);
 
                 var titem = TShock.Utils.GetItemById(searchedItem.ItemID);
-                titem.Prefix(searchedItem.Prefix);
                 titem.stack = amountToFill;
 
                 itemsToGive.Add(titem);
@@ -418,7 +416,7 @@ public class Commands
             args.Player.GiveItem(l.netID, l.stack, l.prefix);
 
 
-        args.Player.SendSuccessMessage(Shop2.FormatMessage("BuyMessage17").SFormat(amount, searchedItem.Prefix, searchedItem.ItemID, ((Money)amount * searchedItem.Price).ToString()) + ((searchedItem.PriceItemID != 0) ? $" + {searchedItem.PriceItemAmount} [i:{searchedItem.PriceItemID}]" : ""));
+        args.Player.SendSuccessMessage(Shop2.FormatMessage("BuyMessage17").SFormat(amount, searchedItem.ItemID, ((Money)amount * searchedItem.Price).ToString()) + ((searchedItem.PriceItemID != 0) ? $" + {searchedItem.PriceItemAmount} [i:{searchedItem.PriceItemID}]" : ""));
 
         args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage5").SFormat(acc.Balance.ToString()));
 
@@ -672,11 +670,11 @@ public class Commands
             }
 
             Item tItem = TShock.Utils.GetItemById(item.ItemID);
-            tItem.Prefix(item.Prefix);
+
             Money buyingPriceToShow = item.Price;
 
             string priceShown = (item.PriceItemID == 0) ? Shop2.Configs.Settings.Messages["ListItemsMessage10"] : Shop2.Configs.Settings.Messages["ListItemsMessage10"] + " [i/s{0}:{1}] +".SFormat(item.PriceItemAmount, item.PriceItemID);
-            string itemShown = string.Format((item.Prefix != 0) ? "[i/p{0}:{1}]" : "[i:{1}]", tItem.prefix, item.ItemID);
+            string itemShown = string.Format("[i:{1}]", item.ItemID);
             args.Player.SendInfoMessage("- {0} [{1}] - ([c/{2}:{3}]) [c/{4}:{5}] {6}" + ((region.Owner == args.Player.Name || args.Player.HasPermission(Shop2.Configs.Settings.AdminCommandPerm)) ? Shop2.Configs.Settings.Messages["ListItemsMessage6"].SFormat(item.ID, item.Stock) : ""), i, itemShown,
                                         Microsoft.Xna.Framework.Color.Gold.Hex3(), tItem.HoverName,
                                         Microsoft.Xna.Framework.Color.Magenta.Hex3(),
