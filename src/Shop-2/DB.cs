@@ -36,6 +36,8 @@ public class DB
         public int PriceChestPosY;
 
         public string Category;
+
+        public bool Sold;
     }
 
     public class ShopRegion
@@ -98,7 +100,8 @@ public class DB
             new SqlColumn("pricechestposy", MySqlDbType.Int32),
             new SqlColumn("priceitemid", MySqlDbType.Int32),
             new SqlColumn("priceitemamount", MySqlDbType.Int32),
-            new SqlColumn("category", MySqlDbType.Text)));
+            new SqlColumn("category", MySqlDbType.Text),
+            new SqlColumn("sold", MySqlDbType.Byte)));
 
         regions.AddRange(GetAllShopRegions());
     }
@@ -122,7 +125,8 @@ public class DB
                     Category = result.Get<string>("category"),
                     PriceItemAmount = result.Get<int>("priceitemamount"),
                     PriceChestPosX = result.Get<int>("pricechestposx"),
-                    PriceChestPosY = result.Get<int>("pricechestposy")
+                    PriceChestPosY = result.Get<int>("pricechestposy"),
+                    Sold = (result.Get<Byte>("sold") == 1) ? true : false
                 };
                 return item;
             }
@@ -175,7 +179,8 @@ public class DB
                     Category = result.Get<string>("category"),
                     PriceItemAmount = result.Get<int>("priceitemamount"),
                     PriceChestPosX = result.Get<int>("pricechestposx"),
-                    PriceChestPosY = result.Get<int>("pricechestposy")
+                    PriceChestPosY = result.Get<int>("pricechestposy"),
+                    Sold = (result.Get<Byte>("sold") == 1) ? true : false
                 };
 
                 yield return item;
@@ -208,8 +213,8 @@ public class DB
         }
     }
 
-    public static void InsertItem(int price, List<int> reqDefeatedBosses, int itemid, int stock, int chestposy, int chestposx, string category, int priceitemid, int priceitemamount, int pricechestposx, int pricechestposy)
-        => db.Query("INSERT INTO sellingitems (price, defeatedbossreq, itemid, stock, chestposx, chestposy, category, priceitemid, priceitemamount, pricechestposx, pricechestposy) VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10);", price, reqDefeatedBosses.ToJson(), itemid, stock, chestposx, chestposy, category, priceitemid, priceitemamount, pricechestposx, pricechestposy);
+    public static void InsertItem(int price, List<int> reqDefeatedBosses, int itemid, int stock, int chestposy, int chestposx, string category, int priceitemid, int priceitemamount, int pricechestposx, int pricechestposy, bool sold)
+        => db.Query("INSERT INTO sellingitems (price, defeatedbossreq, itemid, stock, chestposx, chestposy, category, priceitemid, priceitemamount, pricechestposx, pricechestposy, sold) VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10, @11);", price, reqDefeatedBosses.ToJson(), itemid, stock, chestposx, chestposy, category, priceitemid, priceitemamount, pricechestposx, pricechestposy, (sold) ? 1 : 0);
 
     public static void RemoveItem(int id)
         => db.Query("DELETE FROM sellingitems WHERE id = @0;", id);
