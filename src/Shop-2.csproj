@@ -22,7 +22,13 @@
     <PackageReference Include="TShock" Version="5.2.0">
       <ExcludeAssets>ContentFiles</ExcludeAssets>
     </PackageReference>
-    <None Include="../README.md" Pack="true" PackagePath="\"/>
+    <None Include="../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Wolfje.Plugins.SEconomy">
+      <HintPath>..\..\Dependencies\Wolfje.Plugins.SEconomy.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
