@@ -152,7 +152,15 @@ public class DB
                 List<int> items = (List<int>)result.Get<string>("sellingitems").FromJson(typeof(List<int>));
                 shop.SellingItems = new List<SellingItem>();
                 foreach (int i in items)
-                    shop.SellingItems.Add(GetItem(i));
+                {
+                    var item = GetItem(i);
+
+                    if (item == null) continue;
+                    shop.SellingItems.Add(item);
+
+                }
+
+                ModifyShopRegion(shop.ID, "sellingitems", shop.SellingItems.ToJson());
 
                 return shop;
             }
@@ -206,28 +214,54 @@ public class DB
                 List<int> items = (List<int>)result.Get<string>("sellingitems").FromJson(typeof(List<int>));
                 shop.SellingItems = new List<SellingItem>();
                 foreach (int i in items)
-                    shop.SellingItems.Add(GetItem(i));
+                {
+                    var item = GetItem(i);
+
+                    if (item == null) continue;
+
+                    shop.SellingItems.Add(item);
+
+                }
+
+                ModifyShopRegion(shop.ID, "sellingitems", shop.SellingItems.ToJson());
+
 
                 yield return shop;
             }
         }
     }
 
-    public static void InsertItem(int price, List<int> reqDefeatedBosses, int itemid, int stock, int chestposy, int chestposx, string category, int priceitemid, int priceitemamount, int pricechestposx, int pricechestposy, bool sold)
-        => db.Query("INSERT INTO sellingitems (price, defeatedbossreq, itemid, stock, chestposx, chestposy, category, priceitemid, priceitemamount, pricechestposx, pricechestposy, sold) VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10, @11);", price, reqDefeatedBosses.ToJson(), itemid, stock, chestposx, chestposy, category, priceitemid, priceitemamount, pricechestposx, pricechestposy, (sold) ? 1 : 0);
+    public static int InsertItem(int price, List<int> reqDefeatedBosses, int itemid, int stock, int chestposy, int chestposx, string category, int priceitemid, int priceitemamount, int pricechestposx, int pricechestposy, bool sold)
+    {
+        db.Query("INSERT INTO sellingitems (price, defeatedbossreq, itemid, stock, chestposx, chestposy, category, priceitemid, priceitemamount, pricechestposx, pricechestposy, sold) VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10, @11);", price, reqDefeatedBosses.ToJson(), itemid, stock, chestposx, chestposy, category, priceitemid, priceitemamount, pricechestposx, pricechestposy, (sold) ? 1 : 0);
+        return db.QueryScalar<int>("select last_insert_rowid();");
+    }
 
     public static void RemoveItem(int id)
         => db.Query("DELETE FROM sellingitems WHERE id = @0;", id);
 
-    public static void InsertShopRegion(string regionName, string owner, List<SellingItem> sellingItems, string description, string greet)
-        => db.Query("INSERT INTO shopregions (regionname, owner, sellingitems, description, greet) VALUES (@0, @1, @2, @3, @4);", regionName, owner, sellingItems.ToJson(), description, greet);
-
+    public static int InsertShopRegion(string regionName, string owner, List<SellingItem> sellingItems, string description, string greet)
+    { 
+        db.Query("INSERT INTO shopregions (regionname, owner, sellingitems, description, greet) VALUES (@0, @1, @2, @3, @4);", regionName, owner, sellingItems.ToJson(), description, greet);
+        return db.QueryScalar<int>("select last_insert_rowid();");
+    }
     public static void RemoveShopRegion(int id)
         => db.Query("DELETE FROM shopregions WHERE id = @0;", id);
 
-    public static void ModifyShopRegion(int id, string column, string value)
+    public static void ModifyShopRegion(int id, string column, object value)
         => db.Query("UPDATE shopregions SET @0 = @1 WHERE id = @2", column, value, id);
 
-    public static void ModifyItem(int id, string column, string value)
+    public static void ModifyItem(int id, string column, object value)
         => db.Query("UPDATE sellingitems SET @0 = @1 WHERE id = @2", column, value, id);
+
+    public static void Update()
+    {
+        regions.Clear();
+        regions.AddRange(GetAllShopRegions());
+    }
+
+    public static ShopRegion GetUpdatedRegion(ShopRegion reg)
+    {
+        return GetShopRegion(reg.ID);
+    }
 }

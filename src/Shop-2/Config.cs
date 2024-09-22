@@ -12,10 +12,12 @@ public class Config
     public string CategorySubCommand = string.Empty;
     public string SellSubCommand = string.Empty;
     public string AddBuyItemsSubCommand = string.Empty;
+    public string ModifyItemsSubCommand = string.Empty;
     public string ShopPerm = string.Empty;
     public string PlayerCommandPerm = string.Empty;
     public string AdminCommandPerm = string.Empty;
     public string ShopOwnerPerm = string.Empty;
+    public int MaxShopItems = 0;
     
 }
 
@@ -35,6 +37,8 @@ public class Lang
     private static string _playerCommandsPerm = "shop2.player";
     private static string _showOwnerPerm = "shop2.shopowner";
     private static string _adminCommandPerm = "shop2.admin";
+    private static string _modifyItemCommand = "modifyitem";
+    private static int _maxShopItems = 50;
 
     private static Dictionary<string, string> _message = new Dictionary<string, string>
     {
@@ -63,6 +67,7 @@ public class Lang
         {"ListItemsMessage13", "Selling Price" },
         {"ListItemsMessage14", " [c/FF00FF:ID: {0} Currently buying: {1}]" },
         {"ListItemsMessage15", "Type {0}{1} {2} to sell an item!" },
+        {"ListItemsMessage16", "Number of items in shop: {0}/{1}" },
         {"CategoryMessage1", "Could not find category with the name {0}" },
         {"CategoryMessage2", "The index you gave is invalid!" },
         {"CategoryMessage3", "Successfully switched to category 【[c/008000:{0}]】!" },
@@ -99,7 +104,27 @@ public class Lang
         {"SellMessage13", "Successfully sold {0} [i:{1}] for {2}" },
         {"SellMessage14", "{0} sold {1} {2} at {3} for {4}" },
         {"AddBuyMessage1", "You arent the owner of this shop!" },
-        {"AddBuyMessage2", "Please hold an item to add to the shop" }
+        {"AddBuyMessage2", "Please hold an item to add to the shop" },
+        {"AddBuyMessage3", "Please specify the price and/or category of the item you are trying to add"},
+        {"AddBuyMessage4", "Updated selling item [i:{0}] with a new stock of {1}, ID: {2}" },
+        {"AddBuyMessage5", "Please enter a valid price" },
+        {"AddBuyMessage6", "Successfully added {0} [i:{1}] to the shop with the price {2} ID: {3}" },
+        {"AddBuyMessage7", "Use {0}{1} {2} to modify the item furthermore" },
+        {"AddBuyMessage8", "You have reached the max item limit of {0} in your shop!" },
+        {"ModifyItemMessage1", "Command Usage:\n{0}{1} {2} (Shopping item ID) price (price you want the item to be set to) - modifies the price of the specified item in the shop\n{0}{1} {2} (Shopping item ID) category (category you want the item to be set to) - modifies the category of the item in the shop\n{0}{1} {2} (Shopping item ID) chest - allows you to modify/set the location of the stocks chest if the item is being sold, if the item is an item your shop is buying it will set the location of the chest in which items will apear when players sell to you\n{0}{1} {2} (Shopping item ID) priceitem (item ID) (the amount of said price items needed to but the shopping item) - sets an item as price for the specified shopping item on top of the already existing money price, the amount argument specifies how many of the price item you have said must the player pay to buy your item, the item is taken from their selected item hotbar slot, the item amount cannot exceed the item's max stack, this will also have you set a price chest for where these price items will appear\n{0}{1} {2} (Shopping item ID) pricechest - if the item has a priceitem already set it allows you to reset the chest in which the price items will apear when the players buy from you." },
+        {"ModifyItemMessage2", "{0}{1} {2} (Shopping item ID) bossreq (NPC IDs in a list ex. {0}{1} {2} 23 bossreq 50 13 222) - sets the bosses that need to have been killed already for the item to be buyable / sellable" },
+        {"ModifyItemMessage3", "Please enter a valid ID" },
+        {"ModifyItemMessage4", "Could not find Shopping item!" },
+        {"ModifyItemMessage5", "Please specify a value to modify!" },
+        {"ModifyItemMessage6", "Please specify a price" },
+        {"ModifyItemMessage7", "Please specify a valid price" },
+        {"ModifyItemMessage8", "Please specify a category" },
+        {"ModifyItemMessage9", "Successfully set chest for [i:{0}] ID: {1} at X: {2} Y: {3}" },
+        {"ModifyItemMessage10", "Successfully set the price of [i:{0}] ID: {1} to {2}" },
+        {"ModifyItemMessage11", "Successfully set the category of [i:{0}] ID: {1} to {2}" },
+        {"ModifyItemMessage12", "Please place a chest somewhere inside your shop to set the stock chest" },
+        {"ModifyItemMessage13", "Please specify an item id and item amount" },
+        {"ModifyItemMessage14", "Please specify a valid id" }
     };
 
     public static Config DefaultConfig = new Config
@@ -115,6 +140,8 @@ public class Lang
         AdminCommandPerm = _adminCommandPerm,
         SellSubCommand = _sellCommand,
         AddBuyItemsSubCommand = _addBuyItemCommand,
-        ShopOwnerPerm = _showOwnerPerm
+        ShopOwnerPerm = _showOwnerPerm,
+        ModifyItemsSubCommand = _modifyItemCommand,
+        MaxShopItems = _maxShopItems
     };
 }

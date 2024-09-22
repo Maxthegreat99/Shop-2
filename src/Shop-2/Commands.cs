@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using NuGet.Protocol;
+using System.Collections;
 using System.Collections.Generic;
 using Terraria;
 using TShockAPI;
@@ -9,7 +10,7 @@ namespace Shop2;
 
 public class Commands
 {
-    public static async void store(CommandArgs args)
+    public static void store(CommandArgs args)
     {
         var acc = SEconomyPlugin.Instance.GetBankAccount(args.Player);
         if (acc == null || !acc.IsAccountEnabled)
@@ -89,9 +90,154 @@ public class Commands
             && (subCommand == Shop2.Configs.Settings.AddBuyItemsSubCommand
             || subCommand == "abi"))
         {
+            AddBuyItem(args, region);
+            return;
+        }
+    
+        if (args.Player.HasPermission(Shop2.Configs.Settings.ShopOwnerPerm)
+            && (subCommand == Shop2.Configs.Settings.ModifyItemsSubCommand
+            || subCommand == "mi"))
+        {
 
             return;
         }
+    }
+
+    private static void ModifyBuyItem(CommandArgs args, DB.ShopRegion region)
+    {
+        if (!args.Player.RealPlayer)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("NotReal"));
+            return;
+        }
+
+        if (region == null)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("NotInAShop"));
+            return;
+        }
+
+        if (args.Player.Name != region.Owner && !args.Player.HasPermission(Shop2.Configs.Settings.AdminCommandPerm))
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyItemMessage1"));
+            return;
+        }
+
+        if (args.Parameters.Count < 2)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage1").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ModifyItemsSubCommand));
+            if (args.Player.HasPermission(Shop2.Configs.Settings.AdminCommandPerm)) 
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage2").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ModifyItemsSubCommand));
+            return;
+        }
+
+        int ID;
+
+        bool success = int.TryParse(args.Parameters[1], out ID);
+
+        if (!success)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage3"));
+            return;
+        }
+
+        var item = DB.GetItem(ID);
+
+        if (item == null || (!args.Player.HasPermission(Shop2.Configs.Settings.AdminCommandPerm) && !region.SellingItems.Any(i => i.ID == ID)))
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage4"));
+            return;
+        }
+
+        if (args.Parameters.Count < 3)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage5"));
+            return;
+        }
+
+        var value = args.Parameters[2];
+
+        switch (value.ToLower())
+        {
+            case "price":
+                
+                if (args.Parameters.Count < 4)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage6"));
+                    return;
+                }
+
+                Money price;
+
+                success = Money.TryParse(args.Parameters[3], out price);
+
+                if (!success || price < 1)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage7"));
+                    return;
+                }
+
+                DB.ModifyItem(ID, "price", (int)price);
+                var i = region.SellingItems.First(k => k.ID == ID);
+
+                i.Price = (int) price;
+
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage10").SFormat(item.ItemID, item.ID, price.ToString()));
+
+                return;
+
+            case "category":
+
+                if (args.Parameters.Count < 4)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage8"));
+                    return;
+                }
+
+                var cat = args.Parameters[3];
+
+                DB.ModifyItem(ID, "category", cat);
+
+                var i2 = region.SellingItems.First(k => k.ID == ID);
+
+                i2.Category = cat;
+
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage11").SFormat(item.ItemID, item.ID, cat));
+
+                return;
+
+            case "chest":
+                args.Player.SetData<(int, string)>(Handler.PLACE_SHOP_CHEST_DATA ,(item.ID, region.RegionName));
+
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage12"));
+
+                return;
+
+            case "priceitem":
+
+                if (args.Parameters.Count < 5)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage13"));
+                    return;
+                }
+
+                success = int.TryParse(args.Parameters[3], out int itemid);
+
+                if (!success || TShock.Utils.GetItemById(itemid) == null || TShock.Utils.GetItemById(itemid).netID < 1 || TShock.Utils.GetItemById(itemid).netID > 5455)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage14"));
+                    return;
+                }
+
+                var item1 = TShock.Utils.GetItemById(itemid);
+
+                if ()
+
+        }
+
+
+
+
     }
 
     private static void AddBuyItem(CommandArgs args, DB.ShopRegion region)
@@ -130,8 +276,104 @@ public class Commands
 
         if (!isItemAlreadyAdded && args.Parameters.Count < 2)
         {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyMessage3"));
+            return;
+        }
+
+        if (!isItemAlreadyAdded && args.Player.HasPermission(Shop2.Configs.Settings.AdminCommandPerm) && region.SellingItems.Count > Shop2.Configs.Settings.MaxShopItems)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyMessage8"));
+            return;
+        }
+
+        if(isItemAlreadyAdded)
+        {
+            int amount = args.Player.SelectedItem.stack;
+
+            int InvItem = Array.IndexOf(args.Player.TPlayer.inventory, args.Player.SelectedItem);
+
+            bool isSSC = Main.ServerSideCharacter;
+
+            if (!isSSC)
+            {
+                Main.ServerSideCharacter = true;
+                NetMessage.SendData(7, args.Player.Index, -1, null, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+                args.Player.IgnoreSSCPackets = true;
+            }
+
+            args.TPlayer.inventory[InvItem].stack = 0 ;
+
+            NetMessage.SendData((int)PacketTypes.PlayerSlot, -1, -1, null, args.Player.Index, InvItem, args.TPlayer.inventory[InvItem].stack, args.TPlayer.inventory[InvItem].prefix, args.TPlayer.inventory[InvItem].netID, 0, 0);
+
+            if (!isSSC)
+            {
+                Main.ServerSideCharacter = false;
+                NetMessage.SendData(7, args.Player.Index, -1, null, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+                args.Player.IgnoreSSCPackets = false;
+            }
+
+            var sellingItem = region.SellingItems.First(i => i.ItemID == itemID && !i.Sold);
+            sellingItem.Stock += amount;
+
+            DB.ModifyItem(sellingItem.ID, "stock", sellingItem.Stock);
+            DB.regions.Remove(region);
+            DB.regions.Add(DB.GetUpdatedRegion(region));
+
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyMessage4").SFormat(sellingItem.ItemID, sellingItem.Stock, sellingItem.ID));
+            return;
+        }
+        else
+        {
+            Money price = 0;
+
+            bool success = Money.TryParse(args.Parameters[1], out price);
+
+            if (!success || price < 1)
+            {
+                args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyMessage5"));
+                return;
+            }
+
+            string category = "";
+
+            if (args.Parameters.ElementAtOrDefault(2) != null)
+                category = args.Parameters[2];
+
+
+            int amount = args.Player.SelectedItem.stack;
+
+            int InvItem = Array.IndexOf(args.Player.TPlayer.inventory, args.Player.SelectedItem);
+
+            bool isSSC = Main.ServerSideCharacter;
+
+            if (!isSSC)
+            {
+                Main.ServerSideCharacter = true;
+                NetMessage.SendData(7, args.Player.Index, -1, null, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+                args.Player.IgnoreSSCPackets = true;
+            }
+
+            args.TPlayer.inventory[InvItem].stack = 0;
+
+            NetMessage.SendData((int)PacketTypes.PlayerSlot, -1, -1, null, args.Player.Index, InvItem, args.TPlayer.inventory[InvItem].stack, args.TPlayer.inventory[InvItem].prefix, args.TPlayer.inventory[InvItem].netID, 0, 0);
+
+            if (!isSSC)
+            {
+                Main.ServerSideCharacter = false;
+                NetMessage.SendData(7, args.Player.Index, -1, null, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+                args.Player.IgnoreSSCPackets = false;
+            }
+
+            int ID = DB.InsertItem((int)price, new List<int>(), itemID, amount, 0, 0, category, 0, 0, 0, 0, false);
+            region.SellingItems.Add(DB.GetItem(ID));
+            DB.ModifyShopRegion(region.ID, "sellingitems", region.SellingItems.ToJson());
+
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyMessage6").SFormat(amount, itemID, price.ToString(), ID));
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyMessage7").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ModifyItemsSubCommand));
+            return;
 
         }
+
 
     }
 
@@ -302,6 +544,19 @@ public class Commands
 
         TShock.Log.Write(Shop2.FormatMessage("SellMessage14").SFormat(args.Player.Name, amount, Terraria.Lang.GetItemNameValue(searchedItem.ItemID), region.RegionName, amount * searchedItem.Price), System.Diagnostics.TraceLevel.Info);
 
+        searchedItem.Stock -= amount;
+
+        if (searchedItem.Stock < 1)
+        {
+            DB.RemoveItem(searchedItem.ID);
+            DB.Update();
+        } 
+        else
+        {
+            DB.ModifyItem(searchedItem.ID, "stock", searchedItem.Stock);
+            DB.regions.Remove(region);
+            DB.regions.Add(DB.GetUpdatedRegion(region));
+        }
     }
 
     private static void Buy(CommandArgs args, DB.ShopRegion region, IBankAccount acc)
@@ -655,6 +910,13 @@ public class Commands
         args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage5").SFormat(acc.Balance.ToString()));
 
         TShock.Log.Write(Shop2.FormatMessage("BuyMessage18").SFormat(args.Player.Name, amount, Terraria.Lang.GetItemNameValue(searchedItem.ItemID), region.RegionName, amount * searchedItem.Price), System.Diagnostics.TraceLevel.Info);
+
+        searchedItem.Stock -= amount;
+
+        DB.ModifyItem(searchedItem.ID, "stock", searchedItem.Stock);
+        DB.regions.Remove(region);
+        DB.regions.Add(DB.GetUpdatedRegion(region));
+
     }
 
     private static void Category(CommandArgs args, DB.ShopRegion region, IBankAccount acc)
@@ -936,7 +1198,7 @@ public class Commands
 
         if (sellItems.Count == 0)
         {
-
+            if (region.Owner == args.Player.Name) args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage16").SFormat(region.SellingItems.Count, Shop2.Configs.Settings.MaxShopItems));
             args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage4").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.BuyItemsSubCommand));
             args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage11"));
             args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage5").SFormat(acc.Balance.ToString()));
@@ -982,6 +1244,8 @@ public class Commands
 
 
         }
+
+        if (region.Owner == args.Player.Name) args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage16").SFormat(region.SellingItems.Count, Shop2.Configs.Settings.MaxShopItems));
         args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage4").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.BuyItemsSubCommand));
         args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage15").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.SellSubCommand));
         args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage11"));

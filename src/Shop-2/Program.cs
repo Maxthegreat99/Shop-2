@@ -41,6 +41,7 @@ public class Shop2 : TerrariaPlugin
         ServerApi.Hooks.NpcKilled.Register(this, OnNpcKilled);
         ServerApi.Hooks.GamePostInitialize.Register(this, OnGamePostInitialize);
         ServerApi.Hooks.NetGreetPlayer.Register(this, Handler.OnNetGreet);
+        ServerApi.Hooks.NetGetData.Register(this, Handler.OnGetData);
 
         TShock.Log.ConsoleInfo("Shop-2 by Maxthegreat99 successfully loaded {0} shop regions in!".SFormat(DB.regions.Count));
         TShock.Log.ConsoleInfo("Consider joining the discord for support: https://discord.gg/e465y7Xeba");
@@ -113,6 +114,7 @@ public class Shop2 : TerrariaPlugin
             ServerApi.Hooks.NpcKilled.Deregister(this, OnNpcKilled);
             ServerApi.Hooks.GamePostInitialize.Deregister(this, OnGamePostInitialize);
             ServerApi.Hooks.NetGreetPlayer.Deregister(this, Handler.OnNetGreet);
+            ServerApi.Hooks.NetGetData.Deregister(this, Handler.OnGetData);
             GeneralHooks.ReloadEvent -= OnReload;
         }
 
