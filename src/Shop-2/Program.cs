@@ -79,6 +79,8 @@ public class Shop2 : TerrariaPlugin
          * code to check for defeated bosses, copied from soof's bagger plugin
          * (thank you soof for your works)
          */
+
+        DefeatedBosses.Clear();
         if (IsDefeated(NPCID.KingSlime)) DefeatedBosses.Add(NPCID.KingSlime);
         if (IsDefeated(NPCID.EyeofCthulhu)) DefeatedBosses.Add(NPCID.EyeofCthulhu);
         if (IsDefeated(NPCID.EaterofWorldsHead)) DefeatedBosses.Add(NPCID.EaterofWorldsHead);
@@ -97,7 +99,8 @@ public class Shop2 : TerrariaPlugin
         if (IsDefeated(NPCID.HallowBoss)) DefeatedBosses.Add(NPCID.HallowBoss);
         if (IsDefeated(NPCID.CultistBoss)) DefeatedBosses.Add(NPCID.CultistBoss);
         if (IsDefeated(NPCID.MoonLordCore)) DefeatedBosses.Add(NPCID.MoonLordCore);
-
+        
+        DB.regions.Clear();
         DB.regions.AddRange(DB.GetAllShopRegions());
 
     }

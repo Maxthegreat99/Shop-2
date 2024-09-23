@@ -166,9 +166,9 @@ public class DB
 
         }
 
-        if (shop != null)        
-            ModifyShopRegion(id, "sellingitems", shop.SellingItems.ToJson());
-        
+        if (shop != null)
+            ModifyShopRegion(shop.ID, "sellingitems", shop.SellingItems.Select(i => i.ID).ToJson());
+
         return shop;
     }
 
@@ -234,7 +234,7 @@ public class DB
             }
         }
         foreach (var s in regs)
-            ModifyShopRegion(s.ID, "sellingitems", s.SellingItems.ToJson());
+            ModifyShopRegion(s.ID, "sellingitems", s.SellingItems.Select(i => i.ID).ToJson());
 
         return regs;
 
@@ -249,7 +249,7 @@ public class DB
     public static void RemoveItem(int id)
         => db.Query("DELETE FROM sellitems WHERE id = @0;", id);
 
-    public static int InsertShopRegion(string regionName, string owner, List<SellingItem> sellingItems, string description, string greet)
+    public static int InsertShopRegion(string regionName, string owner, List<int> sellingItems, string description, string greet)
     { 
         db.Query("INSERT INTO shopregions (regionname, owner, sellingitems, description, greet) VALUES (@0, @1, @2, @3, @4);", regionName, owner, sellingItems.ToJson(), description, greet);
         return db.QueryScalar<int>("select last_insert_rowid();");

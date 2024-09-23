@@ -329,7 +329,7 @@ public class Commands
             return;
         }
 
-        DB.InsertShopRegion(args.Parameters[1], args.Player.Name, new List<DB.SellingItem>(), args.Parameters[2], "");
+        DB.InsertShopRegion(args.Parameters[1], args.Player.Name, new List<int>(), args.Parameters[2], "");
     }
     private static void AddBuyItem(CommandArgs args, DB.ShopRegion region)
     {
@@ -457,7 +457,7 @@ public class Commands
 
             int ID = DB.InsertItem((int)price, new List<int>(), itemID, amount, 0, 0, category, 0, 0, 0, 0, false);
             region.SellingItems.Add(DB.GetItem(ID));
-            DB.ModifyShopRegion(region.ID, "sellingitems", region.SellingItems.ToJson());
+            DB.ModifyShopRegion(region.ID, "sellingitems", region.SellingItems.Select(i2 => i2.ID).ToJson());
 
             args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyMessage6").SFormat(amount, itemID, price.ToString(), ID));
             args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyMessage7").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ModifyItemsSubCommand));

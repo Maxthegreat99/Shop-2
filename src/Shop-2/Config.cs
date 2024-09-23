@@ -51,7 +51,7 @@ public class Lang
         {"ListRegionsMessage1", "Shops ({0}/{1}):" },
         {"ListRegionsMessage2","【{0}】 Description: [c/008000:{1}]\nOwned by: [c/008000:{2}]" },
         {"ListRegionsMessage3","Type {0}{1} {2} {{0}} for more." },
-        {"ListRegionsMessage4","There are no shops created yet." },
+        {"ListRegionsMessage4","There are no shops to display." },
         {"ListItemsMessage1", "These are the items and categories currently present in 【[c/008000:{0}]】" },
         {"ListItemsMessage2", "These are the items from the category 【[c/008000:{0}]】 currently present in 【[c/008000:{1}]】" },
         {"ListItemsMessage3", "There are currently no items in this shop!" },
