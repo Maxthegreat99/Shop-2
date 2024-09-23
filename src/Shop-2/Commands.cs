@@ -98,7 +98,13 @@ public class Commands
             && (subCommand == Shop2.Configs.Settings.ModifyItemsSubCommand
             || subCommand == "mi"))
         {
+            ModifyBuyItem(args, region);
+            return;
+        }
 
+        if (subCommand == "create")
+        {
+            CreateShop(args);
             return;
         }
     }
@@ -169,9 +175,9 @@ public class Commands
 
                 Money price;
 
-                success = Money.TryParse(args.Parameters[3], out price);
+                bool success1 = Money.TryParse(args.Parameters[3], out price);
 
-                if (!success || price < 1)
+                if (!success1 || price < 1)
                 {
                     args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage7"));
                     return;
@@ -221,9 +227,9 @@ public class Commands
                     return;
                 }
 
-                success = int.TryParse(args.Parameters[3], out int itemid);
+                bool success2 = int.TryParse(args.Parameters[3], out int itemid);
 
-                if (!success || TShock.Utils.GetItemById(itemid) == null || TShock.Utils.GetItemById(itemid).netID < 1 || TShock.Utils.GetItemById(itemid).netID > 5455)
+                if (!success2 || TShock.Utils.GetItemById(itemid) == null || TShock.Utils.GetItemById(itemid).netID < 1 || TShock.Utils.GetItemById(itemid).netID > 5455)
                 {
                     args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage14"));
                     return;
@@ -231,8 +237,83 @@ public class Commands
 
                 var item1 = TShock.Utils.GetItemById(itemid);
 
-                if ()
+                success = int.TryParse(args.Parameters[4], out int amount);
 
+                if (!success || amount > item1.maxStack)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage15"));
+                    return;
+                }
+
+                args.Player.SetData<(int, int, int, string)>(Handler.PLACE_SHOP_PRICE_CHEST_DATA, (item1.netID, amount, ID, region.RegionName));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage17"));
+
+                return;
+
+            case "pricechest":
+
+                var i4 = region.SellingItems.First(k => k.ID == ID);
+
+                if (i4.PriceItemAmount == 0 || i4.PriceItemID < 1)
+                {
+                    Shop2.FormatMessage("ModifyItemMessage18");
+                    return;
+                }
+
+                args.Player.SetData<(int, int, int, string)>(Handler.PLACE_SHOP_PRICE_CHEST_DATA, (i4.ItemID, i4.PriceItemAmount, ID, region.RegionName));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage17"));
+
+                return;
+            case "bossreq":
+
+                if (!args.Player.HasPermission(Shop2.Configs.Settings.AdminCommandPerm))
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage19"));
+                    return;
+                }
+
+                args.Parameters.RemoveRange(0, 3);
+
+                List<int> bosses = new List<int>();
+
+                if (args.Parameters.Count == 0)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage20"));
+                    return;
+                }
+
+                foreach(string s1 in args.Parameters)
+                {
+                    bool success3 = int.TryParse(s1, out int boss);
+
+                    if (!success3 || !Shop2.ValidBossIDs.Contains(boss))
+                    {
+                        args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage21"));
+                        return;
+                    }
+
+                    bosses.Add(boss);
+                }
+
+
+                var i5 = region.SellingItems.First(k => k.ID == ID);
+                i5.DefeatedBossesReq = bosses;
+
+                DB.ModifyItem(ID, "defeatedbossreq", bosses.ToJson());
+
+                List<string> strings = new List<string>();
+
+                bosses.ForEach(k => strings.Add(Terraria.Lang.GetNPCNameValue(k)));
+
+                string s = String.Join(", ", strings);
+
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage22").SFormat(i5.ItemID, ID, s));
+                
+                return;
+
+            default:
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage19"));
+                return;
         }
 
 
@@ -240,6 +321,16 @@ public class Commands
 
     }
 
+    private static void CreateShop(CommandArgs args)
+    {
+        if (!args.Player.RealPlayer)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("NotReal"));
+            return;
+        }
+
+        DB.InsertShopRegion(args.Parameters[1], args.Player.Name, new List<DB.SellingItem>(), args.Parameters[2], "");
+    }
     private static void AddBuyItem(CommandArgs args, DB.ShopRegion region)
     {
 

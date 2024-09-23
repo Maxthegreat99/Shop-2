@@ -124,7 +124,15 @@ public class Lang
         {"ModifyItemMessage11", "Successfully set the category of [i:{0}] ID: {1} to {2}" },
         {"ModifyItemMessage12", "Please place a chest somewhere inside your shop to set the stock chest" },
         {"ModifyItemMessage13", "Please specify an item id and item amount" },
-        {"ModifyItemMessage14", "Please specify a valid id" }
+        {"ModifyItemMessage14", "Please specify a valid id" },
+        {"ModifyItemMessage15", "Please enter a valid item amount and thats not higher than the item's max stack"},
+        {"ModifyItemMessage16", "Successfully set the price item for [i:{0}] ID: {1} to {2} [i:{3}] at X: {4} Y: {5}" },
+        {"ModifyItemMessage17", "Please place a chest somewhere inside your shop to set the price chest" },
+        {"ModifyItemMessage18", "Cannot modify this item's pricechest, give it a price item first please." },
+        {"ModifyItemMessage19", "Invalid subcommand!" },
+        {"ModifyItemMessage20", "Please give a list of bosses to add to the item" },
+        {"ModifyItemMessage21", "Please give a valid boss NPC id" },
+        {"ModifyItemMessage22", "Successfully added the following bosses to the item [i:{0}] ID: {1} : {2}" }
     };
 
     public static Config DefaultConfig = new Config

@@ -101,9 +101,8 @@ public class DB
             new SqlColumn("priceitemid", MySqlDbType.Int32),
             new SqlColumn("priceitemamount", MySqlDbType.Int32),
             new SqlColumn("category", MySqlDbType.Text),
-            new SqlColumn("sold", MySqlDbType.Byte)));
+            new SqlColumn("sold", MySqlDbType.Int32)));
 
-        regions.AddRange(GetAllShopRegions());
     }
 
     public static SellingItem GetItem(int id)
@@ -126,7 +125,7 @@ public class DB
                     PriceItemAmount = result.Get<int>("priceitemamount"),
                     PriceChestPosX = result.Get<int>("pricechestposx"),
                     PriceChestPosY = result.Get<int>("pricechestposy"),
-                    Sold = (result.Get<Byte>("sold") == 1) ? true : false
+                    Sold = (result.Get<int>("sold") == 1) ? true : false
                 };
                 return item;
             }
@@ -136,11 +135,15 @@ public class DB
 
     public static ShopRegion GetShopRegion(int id)
     {
+
+        ShopRegion shop = null;
         using (var result = db.QueryReader("SELECT * FROM shopregions WHERE id = @0;", id))
         {
+
+
             if (result.Read())
             {
-                var shop = new ShopRegion()
+                shop = new ShopRegion()
                 {
                     ID = result.Get<int>("id"),
                     RegionName = result.Get<string>("regionname"),
@@ -159,18 +162,19 @@ public class DB
                     shop.SellingItems.Add(item);
 
                 }
-
-                ModifyShopRegion(shop.ID, "sellingitems", shop.SellingItems.ToJson());
-
-                return shop;
             }
+
         }
-        return null;
+
+        if (shop != null)        
+            ModifyShopRegion(id, "sellingitems", shop.SellingItems.ToJson());
+        
+        return shop;
     }
 
     public static IEnumerable<SellingItem> GetAllItems()
     {
-        using (var result = db.QueryReader("SELECT * FROM sellingitems;"))
+        using (var result = db.QueryReader("SELECT * FROM sellitems;"))
         {
             while (result.Read())
             {
@@ -188,7 +192,7 @@ public class DB
                     PriceItemAmount = result.Get<int>("priceitemamount"),
                     PriceChestPosX = result.Get<int>("pricechestposx"),
                     PriceChestPosY = result.Get<int>("pricechestposy"),
-                    Sold = (result.Get<Byte>("sold") == 1) ? true : false
+                    Sold = (result.Get<int>("sold") == 1) ? true : false
                 };
 
                 yield return item;
@@ -198,6 +202,8 @@ public class DB
 
     public static IEnumerable<ShopRegion> GetAllShopRegions()
     {
+        List<DB.ShopRegion> regs = new List<ShopRegion>();
+
         using (var result = db.QueryReader("SELECT * FROM shopregions;"))
         {
             while (result.Read())
@@ -223,22 +229,25 @@ public class DB
 
                 }
 
-                ModifyShopRegion(shop.ID, "sellingitems", shop.SellingItems.ToJson());
+                regs.Add(shop);        
 
-
-                yield return shop;
             }
         }
+        foreach (var s in regs)
+            ModifyShopRegion(s.ID, "sellingitems", s.SellingItems.ToJson());
+
+        return regs;
+
     }
 
     public static int InsertItem(int price, List<int> reqDefeatedBosses, int itemid, int stock, int chestposy, int chestposx, string category, int priceitemid, int priceitemamount, int pricechestposx, int pricechestposy, bool sold)
     {
-        db.Query("INSERT INTO sellingitems (price, defeatedbossreq, itemid, stock, chestposx, chestposy, category, priceitemid, priceitemamount, pricechestposx, pricechestposy, sold) VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10, @11);", price, reqDefeatedBosses.ToJson(), itemid, stock, chestposx, chestposy, category, priceitemid, priceitemamount, pricechestposx, pricechestposy, (sold) ? 1 : 0);
+        db.Query("INSERT INTO sellitems (price, defeatedbossreq, itemid, stock, chestposx, chestposy, category, priceitemid, priceitemamount, pricechestposx, pricechestposy, sold) VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10, @11);", price, reqDefeatedBosses.ToJson(), itemid, stock, chestposx, chestposy, category, priceitemid, priceitemamount, pricechestposx, pricechestposy, (sold) ? 1 : 0);
         return db.QueryScalar<int>("select last_insert_rowid();");
     }
 
     public static void RemoveItem(int id)
-        => db.Query("DELETE FROM sellingitems WHERE id = @0;", id);
+        => db.Query("DELETE FROM sellitems WHERE id = @0;", id);
 
     public static int InsertShopRegion(string regionName, string owner, List<SellingItem> sellingItems, string description, string greet)
     { 
@@ -249,10 +258,10 @@ public class DB
         => db.Query("DELETE FROM shopregions WHERE id = @0;", id);
 
     public static void ModifyShopRegion(int id, string column, object value)
-        => db.Query("UPDATE shopregions SET @0 = @1 WHERE id = @2", column, value, id);
+        => db.Query($"UPDATE shopregions SET {column} = @0 WHERE id = @1", value, id);
 
     public static void ModifyItem(int id, string column, object value)
-        => db.Query("UPDATE sellingitems SET @0 = @1 WHERE id = @2", column, value, id);
+        => db.Query($"UPDATE sellitems SET {column} = @0 WHERE id = @1", value, id);
 
     public static void Update()
     {

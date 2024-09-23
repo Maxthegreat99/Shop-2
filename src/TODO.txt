@@ -1,16 +1,9 @@
-- virtual shop regions via SQLite
-- multiple shop regions
-- Boss unlocked shop items
-- admin regions / player regions
-- CHest shops
 - Shop Signs
 - Trade command
 - comfirmation message
 - modifyshop
-- modifysellitem
-- modifybuyitem
 - global shop
 - global shop creation
 - rotation shop
-- add items
 - remove items
+- shop creation

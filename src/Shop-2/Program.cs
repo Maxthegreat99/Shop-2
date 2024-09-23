@@ -23,6 +23,9 @@ public class Shop2 : TerrariaPlugin
     public override Version Version => Assembly.GetExecutingAssembly().GetName().Version;
 
     public static List<int> DefeatedBosses = new List<int>();
+    public static List<int> ValidBossIDs = new List<int>() { NPCID.KingSlime,NPCID.EyeofCthulhu,NPCID.EaterofWorldsHead,NPCID.BrainofCthulhu,NPCID.QueenBee,NPCID.SkeletronHead,NPCID.Deerclops,NPCID.WallofFlesh,NPCID.QueenSlimeBoss,
+                                                             NPCID.TheDestroyer,NPCID.Spazmatism,NPCID.SkeletronPrime,NPCID.Plantera,NPCID.Golem,NPCID.DukeFishron,NPCID.HallowBoss,NPCID.CultistBoss,NPCID.MoonLordCore};
+
     public static DB Database;
 
     public Shop2(Main game) : base(game)
@@ -45,6 +48,11 @@ public class Shop2 : TerrariaPlugin
 
         TShock.Log.ConsoleInfo("Shop-2 by Maxthegreat99 successfully loaded {0} shop regions in!".SFormat(DB.regions.Count));
         TShock.Log.ConsoleInfo("Consider joining the discord for support: https://discord.gg/e465y7Xeba");
+
+        TShockAPI.Commands.ChatCommands.Add(new Command(
+            permissions: new List<string> { Configs.Settings.ShopPerm, },
+            cmd: Commands.store,
+            "store", "str"));
     }
 
     private void OnReload(ReloadEventArgs args)
@@ -89,6 +97,9 @@ public class Shop2 : TerrariaPlugin
         if (IsDefeated(NPCID.HallowBoss)) DefeatedBosses.Add(NPCID.HallowBoss);
         if (IsDefeated(NPCID.CultistBoss)) DefeatedBosses.Add(NPCID.CultistBoss);
         if (IsDefeated(NPCID.MoonLordCore)) DefeatedBosses.Add(NPCID.MoonLordCore);
+
+        DB.regions.AddRange(DB.GetAllShopRegions());
+
     }
 
     private bool IsDefeated(int type)
