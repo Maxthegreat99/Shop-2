@@ -1,6 +1,7 @@
 ﻿using NuGet.Protocol;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Terraria;
 using TShockAPI;
 using Wolfje.Plugins.SEconomy;
@@ -102,7 +103,9 @@ public class Commands
             return;
         }
 
-        if (subCommand == "create")
+        if (args.Player.HasPermission(Shop2.Configs.Settings.ShopOwnerPerm) 
+            && (subCommand == Shop2.Configs.Settings.CreateShopSubCommand
+            || subCommand == "c"))
         {
             CreateShop(args);
             return;
@@ -316,9 +319,6 @@ public class Commands
                 return;
         }
 
-
-
-
     }
 
     private static void CreateShop(CommandArgs args)
@@ -329,7 +329,51 @@ public class Commands
             return;
         }
 
-        DB.InsertShopRegion(args.Parameters[1], args.Player.Name, new List<int>(), args.Parameters[2], "");
+        if (args.Parameters.Count < 2)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("CreateShopMessage1"));
+            return;
+        }
+
+
+        string subcommand = args.Parameters[1].ToLower();
+
+
+        switch(subcommand)
+        {
+            case "set":
+                if (args.Parameters.Count < 3 || !int.TryParse(args.Parameters[2], out int set) || set < 1 || set > 2)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("CreateShopMessage2"));
+                    return;
+                }
+
+                if (set == 2 && args.Player.GetData<(bool, int, int)>(Handler.SET_SHOP_POINT_1_DATA).Item2 == -1 || args.Player.GetData<(bool, int, int)>(Handler.SET_SHOP_POINT_1_DATA).Item3 == -1)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("CreateShopMessage3"));
+                    return;
+                }
+
+                if (set == 1)
+                {
+                    args.Player.SetData(Handler.SET_SHOP_POINT_2_DATA, (false, -1, -1));
+                    args.Player.SetData(Handler.SET_SHOP_POINT_1_DATA, (true, -1, -1));
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("CreateShopMessage4"));
+                    return;
+                }
+                else
+                {
+                    args.Player.SetData(Handler.SET_SHOP_POINT_2_DATA, (true, -1, -1));
+                    return;
+                }
+
+            default:
+                args.Player.SendInfoMessage(Shop2.FormatMessage("CreateShopMessage1"));
+                return;
+        }
+
+
+        
     }
     private static void AddBuyItem(CommandArgs args, DB.ShopRegion region)
     {
@@ -586,6 +630,12 @@ public class Commands
             return;
         }
 
+        if (!TShock.Regions.InAreaRegionName(searchedItem.ChestPosX, searchedItem.ChestPosY).Contains(region.RegionName))
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage15"));
+            return;
+        }
+
 
         int chest = GetChestIdByPos(searchedItem.ChestPosX, searchedItem.ChestPosY);
 
@@ -800,7 +850,13 @@ public class Commands
                 return;
             }
 
-            
+            if (!TShock.Regions.InAreaRegionName(searchedItem.ChestPosX, searchedItem.ChestPosY).Contains(region.RegionName))
+            {
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage20"));
+                return;
+            }
+
+
             int chest = GetChestIdByPos(searchedItem.ChestPosX, searchedItem.ChestPosY);
 
             if (chest == -1)
@@ -830,6 +886,12 @@ public class Commands
                 if (searchedItem.PriceChestPosX == 0 && searchedItem.PriceChestPosY == 0)
                 {
                     args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage12"));
+                    return;
+                }
+
+                if (!TShock.Regions.InAreaRegionName(searchedItem.PriceChestPosX, searchedItem.PriceChestPosY).Contains(region.RegionName))
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage21"));
                     return;
                 }
 
@@ -917,6 +979,13 @@ public class Commands
                 if (searchedItem.PriceChestPosX == 0 && searchedItem.PriceChestPosY == 0)
                 {
                     args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage12"));
+                    return;
+                }
+
+
+                if (!TShock.Regions.InAreaRegionName(searchedItem.PriceChestPosX, searchedItem.PriceChestPosY).Contains(region.RegionName))
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage21"));
                     return;
                 }
 
@@ -1145,7 +1214,7 @@ public class Commands
             list.Add(str);
         }
 
-        PaginationTools.SendPage(args.Player, page, list, 5,
+        PaginationTools.SendPage(args.Player, page, list,
                                  new PaginationTools.Settings()
                                  {
                                      HeaderFormat = Shop2.Configs.Settings.Messages["ListRegionsMessage1"],

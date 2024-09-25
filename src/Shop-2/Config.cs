@@ -13,11 +13,15 @@ public class Config
     public string SellSubCommand = string.Empty;
     public string AddBuyItemsSubCommand = string.Empty;
     public string ModifyItemsSubCommand = string.Empty;
+    public string CreateShopSubCommand = string.Empty;
     public string ShopPerm = string.Empty;
     public string PlayerCommandPerm = string.Empty;
     public string AdminCommandPerm = string.Empty;
     public string ShopOwnerPerm = string.Empty;
     public int MaxShopItems = 0;
+    public int MinShopArea = 0;
+    public int MaxShopArea = 0;
+    public int CostPerBlockShop = 0;
     
 }
 
@@ -38,7 +42,11 @@ public class Lang
     private static string _showOwnerPerm = "shop2.shopowner";
     private static string _adminCommandPerm = "shop2.admin";
     private static string _modifyItemCommand = "modifyitem";
+    private static string _createShopCommand = "create";
     private static int _maxShopItems = 50;
+    private static int _minimumShopArea = 50;
+    private static int _maximumShopArea = 550;
+    private static int _costPerBlock = 175;
 
     private static Dictionary<string, string> _message = new Dictionary<string, string>
     {
@@ -90,6 +98,8 @@ public class Lang
         {"BuyMessage17", "Successfully bought {0} [i:{1}] for {2}" },
         {"BuyMessage18", "{0} bought {1} {2} at {3} for {4}" },
         {"BuyMessage19", "There are currently no buyable items in your current category!"},
+        {"BuyMessage20", "Cannot buy item, the shop owner's stock chest is not located within the shop region"},
+        {"BuyMessage21", "Cannot buy item, the shop owner's price stock chest is not located within the shop region" },
         {"SellMessage1", "Cannot sell items to your own shop!" },
         {"SellMessage3", "There are currently no sellable items your current category" },
         {"SellMessage4", "This shop only buys this item past a certain progression point" },
@@ -103,6 +113,7 @@ public class Lang
         {"SellMessage12", "For selling {0} {1}"},
         {"SellMessage13", "Successfully sold {0} [i:{1}] for {2}" },
         {"SellMessage14", "{0} sold {1} {2} at {3} for {4}" },
+        {"SellMessage15", "cannot sell, the  shop owner's selling chest is not located in the shop region"},
         {"AddBuyMessage1", "You arent the owner of this shop!" },
         {"AddBuyMessage2", "Please hold an item to add to the shop" },
         {"AddBuyMessage3", "Please specify the price and/or category of the item you are trying to add"},
@@ -132,7 +143,13 @@ public class Lang
         {"ModifyItemMessage19", "Invalid subcommand!" },
         {"ModifyItemMessage20", "Please give a list of bosses to add to the item" },
         {"ModifyItemMessage21", "Please give a valid boss NPC id" },
-        {"ModifyItemMessage22", "Successfully added the following bosses to the item [i:{0}] ID: {1} : {2}" }
+        {"ModifyItemMessage22", "Successfully added the following bosses to the item [i:{0}] ID: {1} : {2}" },
+        {"CreateShopMessage1", "Command Usage:\n{0}{1} {2} set 1 - Sets the first point of the rectangle determining the shop region you want to create\n{0}{1} {2} set 2 - Sets the second point of the rectangle determining the shop region you want to create\n{0}{1} {2} comfirm (Shop name) (Shop description) (Shop greeting) - Attempts to create a shop region with the points you set, the shop description is showed to players executing the '/{0}{1} {3}' command, and the shop greeting is the message showed to players upon entering your shop." },
+        {"CreateShopMessage2", "Please choose a proper point number to set" },
+        {"CreateShopMessage3", "Please set the first point before the second" },
+        {"CreateShopMessage4", "Please hit a block to set your shop's first point" },
+        {"CreateShopMessage5", "Please hit a block to set your shop's second point"},
+        {"CreateShopMessage6", "Successfully set the first point at X: {0} Y: {0}" }
     };
 
     public static Config DefaultConfig = new Config
@@ -150,6 +167,10 @@ public class Lang
         AddBuyItemsSubCommand = _addBuyItemCommand,
         ShopOwnerPerm = _showOwnerPerm,
         ModifyItemsSubCommand = _modifyItemCommand,
-        MaxShopItems = _maxShopItems
+        MaxShopItems = _maxShopItems,
+        CreateShopSubCommand = _createShopCommand,
+        MinShopArea = _minimumShopArea,
+        MaxShopArea = _maximumShopArea,
+        CostPerBlockShop = _costPerBlock
     };
 }
