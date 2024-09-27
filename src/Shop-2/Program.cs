@@ -30,6 +30,7 @@ public class Shop2 : TerrariaPlugin
 
     public Shop2(Main game) : base(game)
     {
+
     }
 
     public override void Initialize()

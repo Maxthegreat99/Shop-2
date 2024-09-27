@@ -4,7 +4,6 @@ namespace Shop2;
 
 public class Config
 {
-    public Dictionary<string, string> Messages = new Dictionary<string, string>();
     public string ShopCommand = string.Empty;
     public string ListRegionSubCommand = string.Empty;
     public string ListItemsSubCommand = string.Empty;
@@ -14,6 +13,7 @@ public class Config
     public string AddBuyItemsSubCommand = string.Empty;
     public string ModifyItemsSubCommand = string.Empty;
     public string CreateShopSubCommand = string.Empty;
+    public string ModifyShopSubCommand = string.Empty;
     public string ShopPerm = string.Empty;
     public string PlayerCommandPerm = string.Empty;
     public string AdminCommandPerm = string.Empty;
@@ -22,7 +22,10 @@ public class Config
     public int MinShopArea = 0;
     public int MaxShopArea = 0;
     public int CostPerBlockShop = 0;
-    
+    public int SpawnProtectionRadius;
+    public int MaxOwnableShop = 0;
+    public int MaxShopNameCharacters = 0;
+    public Dictionary<string, string> Messages = new Dictionary<string, string>();
 }
 
 public class ShopConfig : ConfigFile<Config>
@@ -43,10 +46,14 @@ public class Lang
     private static string _adminCommandPerm = "shop2.admin";
     private static string _modifyItemCommand = "modifyitem";
     private static string _createShopCommand = "create";
+    private static string _modifyShopCommand = "modifyshop";
     private static int _maxShopItems = 50;
     private static int _minimumShopArea = 50;
     private static int _maximumShopArea = 550;
     private static int _costPerBlock = 175;
+    private static int _spawnProtectionRadius = 250;
+    private static int _maxOwnableShops = 3;
+    private static int _maxCharactersShopName = 25;
 
     private static Dictionary<string, string> _message = new Dictionary<string, string>
     {
@@ -144,12 +151,31 @@ public class Lang
         {"ModifyItemMessage20", "Please give a list of bosses to add to the item" },
         {"ModifyItemMessage21", "Please give a valid boss NPC id" },
         {"ModifyItemMessage22", "Successfully added the following bosses to the item [i:{0}] ID: {1} : {2}" },
-        {"CreateShopMessage1", "Command Usage:\n{0}{1} {2} set 1 - Sets the first point of the rectangle determining the shop region you want to create\n{0}{1} {2} set 2 - Sets the second point of the rectangle determining the shop region you want to create\n{0}{1} {2} comfirm (Shop name) (Shop description) (Shop greeting) - Attempts to create a shop region with the points you set, the shop description is showed to players executing the '/{0}{1} {3}' command, and the shop greeting is the message showed to players upon entering your shop." },
+        {"CreateShopMessage1", "Command Usage:\n{0}{1} {2} set 1 - Sets the first point of the rectangle determining the shop region you want to create\n{0}{1} {2} set 2 - Sets the second point of the rectangle determining the shop region you want to create\n{0}{1} {2} comfirm (Shop name) - Attempts to create a shop region with the points you have set, you can user multiple parameters to set the shop name, like this: {0}{1} {2} confirm Shop Name." },
         {"CreateShopMessage2", "Please choose a proper point number to set" },
         {"CreateShopMessage3", "Please set the first point before the second" },
         {"CreateShopMessage4", "Please hit a block to set your shop's first point" },
         {"CreateShopMessage5", "Please hit a block to set your shop's second point"},
-        {"CreateShopMessage6", "Successfully set the first point at X: {0} Y: {0}" }
+        {"CreateShopMessage6", "Successfully set the first point at X: {0} Y: {0}" },
+        {"CreateShopMessage7", "Failed to set second point, area is too big, cannot exceed: {0} blocks! Area trying to set: {1} blocks" },
+        {"CreateShopMessage8", "Failed to set second point, area is too small cannot go below: {0} blocks! Area trying to set: {1} blocks" },
+        {"CreateShopMessage9", "Failed to set second point, your area overlaps with the spawn protection area" },
+        {"CreateShopMessage10", "Failed to set second point, your area overlaps with another region"},
+        {"CreateShopMessage11", "Successfully created second point at X: {0} Y: {1}, the area of your region will be {2}" },
+        {"CreateShopMessage12", "Buying this region will cost: {0}" },
+        {"CreateShopMessage13", "Modifying this region will cost: {0}" },
+        {"CreateShopMessage14", "Please set both of your points before creating the shop" },
+        {"CreateShopMessage15", "A shop or region already has that name" },
+        {"CreateShopMessage16", "Cannot create shop, area overlaps with spawn" },
+        {"CreateShopMessage17", "Cannot create shop, area overlaps with another region" },
+        {"CreateShopMessage18", "Cannot create shop, not enough money, Missing {0}" },
+        {"CreateShopMessage19", "Shop Creation" },
+        {"CreateShopMessage20", "For creating a {0} blocks shop named {1}" },
+        {"CreateShopMessage21", "Cannot own more than {0} shops!" },
+        {"CreateShopMessage22", "Successfully created a new shop named {0} with an area of {1}! to modify properties of your shop further (description/greet message) do {2}{3} {4}"},
+        {"CreateShopMessage23", "{0}'s shop" },
+        {"CreateShopMessage24", "Welcome to {0}'s shop!" },
+        {"CreateShopMessage25", "Name of shop cannot be more than {0} characters" }
     };
 
     public static Config DefaultConfig = new Config
@@ -171,6 +197,10 @@ public class Lang
         CreateShopSubCommand = _createShopCommand,
         MinShopArea = _minimumShopArea,
         MaxShopArea = _maximumShopArea,
-        CostPerBlockShop = _costPerBlock
+        CostPerBlockShop = _costPerBlock,
+        SpawnProtectionRadius = _spawnProtectionRadius,
+        MaxOwnableShop = _maxOwnableShops,
+        ModifyShopSubCommand = _modifyShopCommand,
+        MaxShopNameCharacters = _maxCharactersShopName
     };
 }

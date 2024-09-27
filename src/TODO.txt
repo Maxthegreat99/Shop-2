@@ -7,3 +7,4 @@
 - rotation shop
 - remove items
 - shop creation
+- resize shops
