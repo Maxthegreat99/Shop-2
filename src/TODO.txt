@@ -6,5 +6,5 @@
 - global shop creation
 - rotation shop
 - remove items
-- shop creation
 - resize shops
+- addSellItem

@@ -1,6 +1,4 @@
-﻿using IL.Terraria;
-using Terraria;
-using TerrariaApi.Server;
+﻿using TerrariaApi.Server;
 using TShockAPI;
 using Wolfje.Plugins.SEconomy;
 using Main = Terraria.Main;
@@ -14,6 +12,7 @@ namespace Shop2
         public const string PLACE_SHOP_PRICE_CHEST_DATA = "placepriceshopchest";
         public const string SET_SHOP_POINT_1_DATA = "setshop1";
         public const string SET_SHOP_POINT_2_DATA = "setshop2";
+        public const string MODIFY_SHOP_CONFIRM_DATA = "modifyshopconfirm";
 
         public static void OnNetGreet(GreetPlayerEventArgs args)
         {
@@ -22,11 +21,35 @@ namespace Shop2
                 return;
             }
 
+            // shop region, category index
             TShock.Players.ElementAt(args.Who).SetData(CATEGORY_DATA, ("", 0));
+            // shop item ID, shop region 
             TShock.Players.ElementAt(args.Who).SetData(PLACE_SHOP_CHEST_DATA, (-1, ""));
+            // price item id, item amount, shop item id, shop region
             TShock.Players.ElementAt(args.Who).SetData(PLACE_SHOP_PRICE_CHEST_DATA, (-1, -1, -1, ""));
+            // active, X, Y
             TShock.Players.ElementAt(args.Who).SetData(SET_SHOP_POINT_1_DATA, (false, -1, -1));
-            TShock.Players.ElementAt(args.Who).SetData(SET_SHOP_POINT_2_DATA, ("",false, -1, -1));
+            TShock.Players.ElementAt(args.Who).SetData(SET_SHOP_POINT_2_DATA, (false, -1, -1));
+            // confirm type, time
+            TShock.Players.ElementAt(args.Who).SetData<(string, long)>(MODIFY_SHOP_CONFIRM_DATA, ("", 0));
+        }
+
+        public static void OnGameUpdate(EventArgs args)
+        {
+            Shop2.Timer++;
+
+            foreach (var p in TShock.Players)
+            {
+                var modifyShopData = p.GetData<(string, long)>(MODIFY_SHOP_CONFIRM_DATA);
+
+                if (modifyShopData.Item1 == "") continue;
+
+                // if time passed is greater than 20 seconds
+                if (Shop2.Timer - modifyShopData.Item2 > 1200)
+                    p.SetData(MODIFY_SHOP_CONFIRM_DATA, ("", 0));
+
+                
+            }
         }
 
         public static void OnGetData(GetDataEventArgs args)
@@ -83,7 +106,6 @@ namespace Shop2
                     player.SetData(PLACE_SHOP_CHEST_DATA, (-1, ""));
 
                     player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage9").SFormat(item.ItemID, item.ID, X, Y));
-
                 }
                 else
                 {
@@ -116,8 +138,6 @@ namespace Shop2
                     DB.ModifyItem(item.ID, "priceitemid", placePriceChestData.Item1);
                     DB.ModifyItem(item.ID, "priceitemamount", placePriceChestData.Item2);
 
-
-
                     player.SendInfoMessage(Shop2.FormatMessage("ModifyItemMessage16").SFormat(item.ItemID, item.ID, placePriceChestData.Item2, placePriceChestData.Item1, X, Y));
 
                     player.SetData(PLACE_SHOP_PRICE_CHEST_DATA, (-1, -1, -1, ""));
@@ -134,14 +154,14 @@ namespace Shop2
             if (X1 == 0 || Y1 == 0 || ply == null) return;
 
             var set1Data = ply.GetData<(bool, int, int)>(SET_SHOP_POINT_1_DATA);
-            var set2Data = ply.GetData<(string,bool, int, int)>(SET_SHOP_POINT_2_DATA);
+            var set2Data = ply.GetData<(bool, int, int)>(SET_SHOP_POINT_2_DATA);
 
-            if (!set1Data.Item1 && !set2Data.Item2) return;
+            if (!set1Data.Item1 && !set2Data.Item1) return;
 
             if (set1Data.Item1)
             {
                 ply.SetData(SET_SHOP_POINT_1_DATA, (false, X1, Y1));
-                ply.SetData(SET_SHOP_POINT_2_DATA, ("",false, -1, -1));
+                ply.SetData(SET_SHOP_POINT_2_DATA, (false, -1, -1));
                 ply.SendInfoMessage(Shop2.FormatMessage("CreateShopMessage6").SFormat(X1, Y1));
                 return;
             }
@@ -167,18 +187,17 @@ namespace Shop2
                     return;
                 }
 
-
                 bool collides = false;
                 foreach (var r in TShock.Regions.Regions)
                 {
-                    if ((!r.HasPermissionToBuildInRegion(ply) || DB.regions.Any(i => i.RegionName == r.Name)) && CheckCollision(x, y, width, height, r.Area.X, r.Area.Y, r.Area.Width, r.Area.Height))
+                    if ((!r.HasPermissionToBuildInRegion(ply) || DB.regions.Any(i => i.RegionName == r.Name && i.Owner != ply.Name)) && CheckCollision(x, y, width, height, r.Area.X, r.Area.Y, r.Area.Width, r.Area.Height))
                     {
                         collides = true;
                         break;
                     }
                 }
 
-                if (CheckCollision(x, y, width, height, Main.spawnTileX - Shop2.Configs.Settings.SpawnProtectionRadius / 2 ,Main.spawnTileY - Shop2.Configs.Settings.SpawnProtectionRadius / 2, Shop2.Configs.Settings.SpawnProtectionRadius, Shop2.Configs.Settings.SpawnProtectionRadius ))
+                if (CheckCollision(x, y, width, height, Main.spawnTileX - Shop2.Configs.Settings.SpawnProtectionRadius / 2, Main.spawnTileY - Shop2.Configs.Settings.SpawnProtectionRadius / 2, Shop2.Configs.Settings.SpawnProtectionRadius, Shop2.Configs.Settings.SpawnProtectionRadius))
                 {
                     ply.SendInfoMessage(Shop2.FormatMessage("CreateShopMessage9"));
                     return;
@@ -191,40 +210,21 @@ namespace Shop2
                 }
             }
 
-
-            ply.SetData(SET_SHOP_POINT_2_DATA, (set2Data.Item1, false, X1, Y1));
+            ply.SetData(SET_SHOP_POINT_2_DATA, (false, X1, Y1));
 
             ply.SendInfoMessage(Shop2.FormatMessage("CreateShopMessage11").SFormat(X1, Y1, height * width));
-
-            if (set2Data.Item1 != "" && TShock.Regions.GetRegionByName(set2Data.Item1) != null)
-            {
-                var r = TShock.Regions.GetRegionByName(set2Data.Item1);
-
-                int area = r.Area.Width * r.Area.Height;
-
-                Money Price = (width * height * Shop2.Configs.Settings.CostPerBlockShop) - (area * Shop2.Configs.Settings.CostPerBlockShop);
-
-                if (Price < 0) Price = 0;
-
-                ply.SendInfoMessage(Shop2.FormatMessage("CreateShopMessage13").SFormat(Price.ToString()));
-                return;
-            }
 
             Money price = width * height * Shop2.Configs.Settings.CostPerBlockShop;
 
             ply.SendInfoMessage(Shop2.FormatMessage("CreateShopMessage12").SFormat(price.ToString()));
-
-
         }
 
         public static bool CheckCollision(int x, int y, int w, int h, int x2, int y2, int w2, int h2)
         {
-
             return (x < x2 + w2
                 && x + w > x2
                 && y < y2 + h2
                 && y + h > y2);
-
         }
     }
-} 
+}

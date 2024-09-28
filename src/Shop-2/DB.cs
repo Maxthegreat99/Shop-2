@@ -102,7 +102,6 @@ public class DB
             new SqlColumn("priceitemamount", MySqlDbType.Int32),
             new SqlColumn("category", MySqlDbType.Text),
             new SqlColumn("sold", MySqlDbType.Int32)));
-
     }
 
     public static SellingItem GetItem(int id)
@@ -135,12 +134,9 @@ public class DB
 
     public static ShopRegion GetShopRegion(int id)
     {
-
         ShopRegion shop = null;
         using (var result = db.QueryReader("SELECT * FROM shopregions WHERE id = @0;", id))
         {
-
-
             if (result.Read())
             {
                 shop = new ShopRegion()
@@ -160,10 +156,8 @@ public class DB
 
                     if (item == null) continue;
                     shop.SellingItems.Add(item);
-
                 }
             }
-
         }
 
         if (shop != null)
@@ -226,18 +220,15 @@ public class DB
                     if (item == null) continue;
 
                     shop.SellingItems.Add(item);
-
                 }
 
-                regs.Add(shop);        
-
+                regs.Add(shop);
             }
         }
         foreach (var s in regs)
             ModifyShopRegion(s.ID, "sellingitems", s.SellingItems.Select(i => i.ID).ToJson());
 
         return regs;
-
     }
 
     public static int InsertItem(int price, List<int> reqDefeatedBosses, int itemid, int stock, int chestposy, int chestposx, string category, int priceitemid, int priceitemamount, int pricechestposx, int pricechestposy, bool sold)
@@ -250,10 +241,11 @@ public class DB
         => db.Query("DELETE FROM sellitems WHERE id = @0;", id);
 
     public static int InsertShopRegion(string regionName, string owner, List<int> sellingItems, string description, string greet)
-    { 
+    {
         db.Query("INSERT INTO shopregions (regionname, owner, sellingitems, description, greet) VALUES (@0, @1, @2, @3, @4);", regionName, owner, sellingItems.ToJson(), description, greet);
         return db.QueryScalar<int>("select last_insert_rowid();");
     }
+
     public static void RemoveShopRegion(int id)
         => db.Query("DELETE FROM shopregions WHERE id = @0;", id);
 

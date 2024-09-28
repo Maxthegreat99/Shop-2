@@ -25,6 +25,8 @@ public class Config
     public int SpawnProtectionRadius;
     public int MaxOwnableShop = 0;
     public int MaxShopNameCharacters = 0;
+    public int MaxShopDescriptionCharacters = 0;
+    public int MaxShopGreetCharacters = 0;
     public Dictionary<string, string> Messages = new Dictionary<string, string>();
 }
 
@@ -54,6 +56,8 @@ public class Lang
     private static int _spawnProtectionRadius = 250;
     private static int _maxOwnableShops = 3;
     private static int _maxCharactersShopName = 25;
+    private static int _maxCharactersShopDescription = 200;
+    private static int _maxChratctersShopGreet = 100;
 
     private static Dictionary<string, string> _message = new Dictionary<string, string>
     {
@@ -129,7 +133,7 @@ public class Lang
         {"AddBuyMessage6", "Successfully added {0} [i:{1}] to the shop with the price {2} ID: {3}" },
         {"AddBuyMessage7", "Use {0}{1} {2} to modify the item furthermore" },
         {"AddBuyMessage8", "You have reached the max item limit of {0} in your shop!" },
-        {"ModifyItemMessage1", "Command Usage:\n{0}{1} {2} (Shopping item ID) price (price you want the item to be set to) - modifies the price of the specified item in the shop\n{0}{1} {2} (Shopping item ID) category (category you want the item to be set to) - modifies the category of the item in the shop\n{0}{1} {2} (Shopping item ID) chest - allows you to modify/set the location of the stocks chest if the item is being sold, if the item is an item your shop is buying it will set the location of the chest in which items will apear when players sell to you\n{0}{1} {2} (Shopping item ID) priceitem (item ID) (the amount of said price items needed to but the shopping item) - sets an item as price for the specified shopping item on top of the already existing money price, the amount argument specifies how many of the price item you have said must the player pay to buy your item, the item is taken from their selected item hotbar slot, the item amount cannot exceed the item's max stack, this will also have you set a price chest for where these price items will appear\n{0}{1} {2} (Shopping item ID) pricechest - if the item has a priceitem already set it allows you to reset the chest in which the price items will apear when the players buy from you." },
+        {"ModifyItemMessage1", "Command Usage:\n{0}{1} {2} (Shopping item ID) price (price you want the item to be set to) - modifies the price of the specified item in the shop (you can write it in numbers or like this : 1p for 1 platinum, 1g2s for 1 gold and 2 silver etc...)\n{0}{1} {2} (Shopping item ID) category (category you want the item to be set to) - modifies the category of the item in the shop\n{0}{1} {2} (Shopping item ID) chest - allows you to modify/set the location of the stocks chest if the item is being sold, if the item is an item your shop is buying it will set the location of the chest in which items will apear when players sell to you\n{0}{1} {2} (Shopping item ID) priceitem (item ID) (the amount of said price items needed to but the shopping item) - sets an item as price for the specified shopping item on top of the already existing money price, the amount argument specifies how many of the price item you have said must the player pay to buy your item, the item is taken from their selected item hotbar slot, the item amount cannot exceed the item's max stack, this will also have you set a price chest for where these price items will appear\n{0}{1} {2} (Shopping item ID) pricechest - if the item has a priceitem already set it allows you to reset the chest in which the price items will apear when the players buy from you." },
         {"ModifyItemMessage2", "{0}{1} {2} (Shopping item ID) bossreq (NPC IDs in a list ex. {0}{1} {2} 23 bossreq 50 13 222) - sets the bosses that need to have been killed already for the item to be buyable / sellable" },
         {"ModifyItemMessage3", "Please enter a valid ID" },
         {"ModifyItemMessage4", "Could not find Shopping item!" },
@@ -163,7 +167,6 @@ public class Lang
         {"CreateShopMessage10", "Failed to set second point, your area overlaps with another region"},
         {"CreateShopMessage11", "Successfully created second point at X: {0} Y: {1}, the area of your region will be {2}" },
         {"CreateShopMessage12", "Buying this region will cost: {0}" },
-        {"CreateShopMessage13", "Modifying this region will cost: {0}" },
         {"CreateShopMessage14", "Please set both of your points before creating the shop" },
         {"CreateShopMessage15", "A shop or region already has that name" },
         {"CreateShopMessage16", "Cannot create shop, area overlaps with spawn" },
@@ -175,7 +178,22 @@ public class Lang
         {"CreateShopMessage22", "Successfully created a new shop named {0} with an area of {1}! to modify properties of your shop further (description/greet message) do {2}{3} {4}"},
         {"CreateShopMessage23", "{0}'s shop" },
         {"CreateShopMessage24", "Welcome to {0}'s shop!" },
-        {"CreateShopMessage25", "Name of shop cannot be more than {0} characters" }
+        {"CreateShopMessage25", "Name of shop cannot be more than {0} characters" },
+        {"ModifyShopMessage1", "Command Usage:\n{0}{1} {2} description (shop description) - modifies the shop's description which is showed to players when listing all the different shops present in the world\n{0}{1} {2} greet (shop greeting) - modifies the message showed to players upon entering your shop\n{0}{1} {2} removeitem (shop item ID) - Removes the specified item from listing in the shop and gives back you the items stored virtually in the store if its a buying item\n{0}{1} {2} deleteshop - sends you a comfirmation request to delete the shop, you will be given the stored items back, the region will also be deleted\n{0}{1} {2} transferownership (player name) - sends you a comfirmation requet to transfers ownership of the shop to the specified player, you will no longer be able to modify this shop\n{0}{1} {2} resizeshop - sends a confirmation message to resize the shop using set points, you need to do {0]{1} {3} set <1/2> before typing out this command, the price of resizing the shop depends on the current area of the shop and the new area, if the area you have set with set <1/2> is bigger than the current area of your shop the price will be calculated using the extra area you are gaining, if its smaller the price is 0\n{0}{1} {2} confirm - confirmation for the delete and transferownership commands, actions cannot be reversed after this command is executed" },
+        {"ModifyShopMessage2", "Please provide a description" },
+        {"ModifyShopMessage3", "Shop description cannot exceed {0} characters" },
+        {"ModifyShopMessage4", "Successfully changed the shop's description to:\n{0}"},
+        {"ModifyShopMessage5", "Succesfully changed the shop's greet mesage to:\n{0}" },
+        {"ModifyShopMessage6", "Please provide a greet message" },
+        {"ModifyShopMessage7", "Shop greet message cannot exceed {0} characters" },
+        {"ModifyShopMessage8", "Please provide the id of a shop item!" },
+        {"ModifyShopMessage9", "Please provide a valid shop item ID!" },
+        {"ModifyShopMessage10", "Successfully deleted sell item [i:{0}] ID: {1}" },
+        {"ModifyShopMessage11", "Successfully deleted buy item [i:{0}] ID: {1}" },
+        {"ModifyShopMessage12", "type {0}{1} {2} confirm to confirm that you want delete to your shop named {3}, currently holding {4} items and with an area of {5} blocks" },
+        {"ModifyShopMessage13", "Please set both of your points using {0}{1} {2} set <1/2> before using this command"},
+        {"ModifyShopMessage14", "The area you are trying to set is too close to spawn!" },
+        {"ModifyShopMessage15", "The area you are trying to set collides with another region!" }
     };
 
     public static Config DefaultConfig = new Config
@@ -201,6 +219,8 @@ public class Lang
         SpawnProtectionRadius = _spawnProtectionRadius,
         MaxOwnableShop = _maxOwnableShops,
         ModifyShopSubCommand = _modifyShopCommand,
-        MaxShopNameCharacters = _maxCharactersShopName
+        MaxShopNameCharacters = _maxCharactersShopName,
+        MaxShopDescriptionCharacters = _maxCharactersShopDescription,
+        MaxShopGreetCharacters = _maxChratctersShopGreet
     };
 }
