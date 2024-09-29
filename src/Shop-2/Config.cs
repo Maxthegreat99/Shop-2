@@ -14,6 +14,8 @@ public class Config
     public string ModifyItemsSubCommand = string.Empty;
     public string CreateShopSubCommand = string.Empty;
     public string ModifyShopSubCommand = string.Empty;
+    public string AddSellItemSubCommand = string.Empty;
+    public string ConfirmSubCommand = string.Empty;
     public string ShopPerm = string.Empty;
     public string PlayerCommandPerm = string.Empty;
     public string AdminCommandPerm = string.Empty;
@@ -49,6 +51,8 @@ public class Lang
     private static string _modifyItemCommand = "modifyitem";
     private static string _createShopCommand = "create";
     private static string _modifyShopCommand = "modifyshop";
+    private static string _addSellItemCommand = "addsellitem";
+    private static string _confirmActionCommand = "confirm";
     private static int _maxShopItems = 50;
     private static int _minimumShopArea = 50;
     private static int _maximumShopArea = 550;
@@ -179,7 +183,7 @@ public class Lang
         {"CreateShopMessage23", "{0}'s shop" },
         {"CreateShopMessage24", "Welcome to {0}'s shop!" },
         {"CreateShopMessage25", "Name of shop cannot be more than {0} characters" },
-        {"ModifyShopMessage1", "Command Usage:\n{0}{1} {2} description (shop description) - modifies the shop's description which is showed to players when listing all the different shops present in the world\n{0}{1} {2} greet (shop greeting) - modifies the message showed to players upon entering your shop\n{0}{1} {2} removeitem (shop item ID) - Removes the specified item from listing in the shop and gives back you the items stored virtually in the store if its a buying item\n{0}{1} {2} deleteshop - sends you a comfirmation request to delete the shop, you will be given the stored items back, the region will also be deleted\n{0}{1} {2} transferownership (player name) - sends you a comfirmation requet to transfers ownership of the shop to the specified player, you will no longer be able to modify this shop\n{0}{1} {2} resizeshop - sends a confirmation message to resize the shop using set points, you need to do {0]{1} {3} set <1/2> before typing out this command, the price of resizing the shop depends on the current area of the shop and the new area, if the area you have set with set <1/2> is bigger than the current area of your shop the price will be calculated using the extra area you are gaining, if its smaller the price is 0\n{0}{1} {2} confirm - confirmation for the delete and transferownership commands, actions cannot be reversed after this command is executed" },
+        {"ModifyShopMessage1", "Command Usage:\n{0}{1} {2} description (shop description) - modifies the shop's description which is showed to players when listing all the different shops present in the world\n{0}{1} {2} greet (shop greeting) - modifies the message showed to players upon entering your shop\n{0}{1} {2} removeitem (shop item ID) - Removes the specified item from listing in the shop and gives back you the items stored virtually in the store if its a buying item\n{0}{1} {2} deleteshop - sends you a comfirmation request to delete the shop, you will be given the stored items back, the region will also be deleted\n{0}{1} {2} transferownership (player name) - sends you a comfirmation requet to transfers ownership of the shop to the specified player, you will no longer be able to modify this shop\n{0}{1} {2} resizeshop - sends a confirmation message to resize the shop using set points, you need to do {0]{1} {3} set <1/2> before typing out this command, the price of resizing the shop depends on the current area of the shop and the new area, if the area you have set with set <1/2> is bigger than the current area of your shop the price will be calculated using the extra area you are gaining, if its smaller the price is 0\n{0}{1} {2} confirm - confirmation for the delete and transferownership commands, actions cannot be reversed after this command is executed\n{0}{1} {2} trust (player name) - allows/prevents the specified player to build in your shop region, use this command on a player that can already build in your shop region to prevent them from building in it" },
         {"ModifyShopMessage2", "Please provide a description" },
         {"ModifyShopMessage3", "Shop description cannot exceed {0} characters" },
         {"ModifyShopMessage4", "Successfully changed the shop's description to:\n{0}"},
@@ -193,7 +197,40 @@ public class Lang
         {"ModifyShopMessage12", "type {0}{1} {2} confirm to confirm that you want delete to your shop named {3}, currently holding {4} items and with an area of {5} blocks" },
         {"ModifyShopMessage13", "Please set both of your points using {0}{1} {2} set <1/2> before using this command"},
         {"ModifyShopMessage14", "The area you are trying to set is too close to spawn!" },
-        {"ModifyShopMessage15", "The area you are trying to set collides with another region!" }
+        {"ModifyShopMessage15", "The area you are trying to set collides with another region!" },
+        {"ModifyShopMessage16", "Price of modifying the area: {0} to add {1} blocks of area to your current shop, currently missing: {2}" },
+        {"ModifyShopMessage17", "Shop Resize" },
+        {"ModifyShopMessage18", "For adding {0} blocks of area to shop named {1}" },
+        {"ModifyShopMessage19", "Successfully resize shop region from {0} blocks to {1} blocks for {2}"},
+        {"ModifyShopMessage20", "Please specify the player you want to transfer ownership to" },
+        {"ModifyShopMessage21", "No players match the name of {0}" },
+        {"ModifyShopMessage22", "Please type {0}{1} {2} confirm to confirm that you want to transfer your shop {3} to {4}" },
+        {"ModifyShopMessage23", "Nothing to confirm, use this command after using resizeshop or transferownership commands to confirm their actions" },
+        {"ModifyShopMessage24", "Successfully deleted your shop {0}!" },
+        {"ModifyShopMessage25", "Player {0} does not have the permission to own a shop!"},
+        {"ModifyShopMessage26", "{0} now owns {1}!" },
+        {"ModifyShopMessage27", "You have earned ownership of the shop {0}!" },
+        {"ModifyShopMessage28", "Please specify a player to allow to build in your shop" },
+        {"ModifyShopMessage29", "Couldnt find a player containing name {0}" },
+        {"ModifyShopMessage30", "Prevented {0} from building in your shop"},
+        {"ModifyShopMessage31", "Allowed {0} to build in your shop" },
+        {"AddSellItemMessage1", "Please specify an item id, amount and price of the item you want to buy from players" },
+        {"AddSellItemMessage2", "Please provide a valid item ID" },
+        {"AddSellItemMessage3", "Please provide a valid amount" },
+        {"AddSellItemMessage4", "Please provide a valid price" },
+        {"AddSellItemMessage5", "A selling item of the same id has already been added in your shop, modified the amount and price of said item." },
+        {"AddSellItemMessage6", "Successfully added sell item [i:{0}] ID: {1} with an amount to buy of {2} each with a price of {3}!" },
+        {"AddSellItemMessage7", "IMPORTANT: For your sell item to be valid you need to give it a chest for storing the items when players sell to you, do so using {0}{1} {2} (ID) chest" },
+        {"ShopSign1", "Successfully setted shop sign for [i:{0}] ID {1}!" },
+        {"ConfirmBuyMessage1", "Checking the stocks of item [i:{0}]..." },
+        {"ConfirmBuyMessage2", "The amount of items virtually left was not enough to meet the amount you inserted, after confirming purchase type the command again to see if the item has the stocks you need in the shop's stock chest" },
+        {"ConfirmBuyMessage3", "The shop's stock chest does not have enough to meet your required item amount" },
+        {"ConfirmBuyMessage4", "Type {0}{1} {2} to confirm that you want to buy {3} [i:{4}] for {5}" },
+        {"ConfirmSellMessage5", "Checking Stockc chest validity of item [i:{0}]" },
+        {"ConfirmSellMessage6", "Type {0}{1} {2} to confirm that you want to sell {3} [i:{4}]" },
+        {"Confirm1", "try to sell or buy something before typing this command"}
+
+        
     };
 
     public static Config DefaultConfig = new Config
@@ -221,6 +258,8 @@ public class Lang
         ModifyShopSubCommand = _modifyShopCommand,
         MaxShopNameCharacters = _maxCharactersShopName,
         MaxShopDescriptionCharacters = _maxCharactersShopDescription,
-        MaxShopGreetCharacters = _maxChratctersShopGreet
+        MaxShopGreetCharacters = _maxChratctersShopGreet,
+        AddSellItemSubCommand = _addSellItemCommand,
+        ConfirmSubCommand = _confirmActionCommand
     };
 }

@@ -49,6 +49,8 @@ public class Shop2 : TerrariaPlugin
         ServerApi.Hooks.NetGreetPlayer.Register(this, Handler.OnNetGreet);
         ServerApi.Hooks.NetGetData.Register(this, Handler.OnGetData);
         ServerApi.Hooks.GameUpdate.Register(this, Handler.OnGameUpdate);
+        GetDataHandlers.Sign += Handler.OnSignChange;
+        GetDataHandlers.SignRead += Handler.OnSignRead;
 
         TShockAPI.Commands.ChatCommands.Add(new Command(
             permissions: new List<string> { Configs.Settings.ShopPerm, },
@@ -137,6 +139,8 @@ public class Shop2 : TerrariaPlugin
             ServerApi.Hooks.NetGetData.Deregister(this, Handler.OnGetData);
             ServerApi.Hooks.GameUpdate.Deregister(this, Handler.OnGameUpdate);
             GeneralHooks.ReloadEvent -= OnReload;
+            GetDataHandlers.Sign -= Handler.OnSignChange;
+            GetDataHandlers.SignRead -= Handler.OnSignRead;
         }
 
         base.Dispose(disposing);

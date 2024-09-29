@@ -1,4 +1,7 @@
-﻿using NuGet.Protocol;
+﻿using Google.Protobuf;
+using IL.Terraria.ID;
+using NuGet.Protocol;
+using ReLogic.OS;
 using Terraria;
 using TShockAPI;
 using Wolfje.Plugins.SEconomy;
@@ -71,7 +74,7 @@ public class Commands
             && (subCommand == Shop2.Configs.Settings.BuyItemsSubCommand
             || subCommand == "b"))
         {
-            Buy(args, region, acc);
+            SendBuyConfirmMessage(args, region, acc);
             return;
         }
 
@@ -79,7 +82,7 @@ public class Commands
             && (subCommand == Shop2.Configs.Settings.SellSubCommand
             || subCommand == "s"))
         {
-            Sell(args, region, acc);
+            SendSellConfirmMessage(args, region, acc);
             return;
         }
 
@@ -111,10 +114,551 @@ public class Commands
             && (subCommand == Shop2.Configs.Settings.ModifyShopSubCommand
             || subCommand == "ms"))
         {
+            ModifyShop(args, region, acc);
+            return;
+        }
+
+        if (args.Player.HasPermission(Shop2.Configs.Settings.ShopOwnerPerm)
+            && (subCommand == Shop2.Configs.Settings.AddSellItemSubCommand
+            || subCommand == "asi"))
+        {
+            AddSellItem(args, region);
+            return;
+        }
+
+        if (args.Player.HasPermission(Shop2.Configs.Settings.PlayerCommandPerm)
+            && (subCommand == Shop2.Configs.Settings.ConfirmSubCommand
+            || subCommand == "co"))
+        {
+            Confrim(args, region, acc);
+            return;
+        }
+
+    }
+
+    // performs the requirement checks for the item and sends to the player a confirmation for the player to see if the item they typed was infact what they were trying to buy
+    private static void SendBuyConfirmMessage(CommandArgs args, DB.ShopRegion region, IBankAccount acc)
+    {
+        if (!args.Player.RealPlayer)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("NotReal"));
+            return;
+        }
+
+        if (region == null)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("NotInAShop"));
+            return;
+        }
+
+        if (args.Player.Name == region.Owner)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage1"));
+            return;
+        }
+
+        if (args.Parameters.Count < 2)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage2"));
+            return;
+        }
+
+        if (!SEconomyPlugin.Instance.RunningJournal.BankAccounts.Any(i => i.UserAccountName == region.Owner))
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage8"));
+            return;
+        }
+
+        int index = 0;
+        string inputName = null;
+
+        bool parsed = false;
+        try
+        {
+            index = int.Parse(args.Parameters[1]);
+            parsed = true;
+        }
+        catch (Exception ex)
+        {
+            index = 0;
+        }
+
+        if (!parsed)
+            inputName = args.Parameters[1];
+
+        int amount = 1;
+
+        if (args.Parameters.Count > 2)
+        {
+            try
+            {
+                amount = int.Parse(args.Parameters[2]);
+            }
+            catch (Exception ex)
+            {
+                amount = 1;
+            }
+        }
+
+        if (amount < 1)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage3"));
+            return;
+        }
+
+        (string, int) currentCategory = args.Player.GetData<(string, int)>(Handler.CATEGORY_DATA);
+
+        bool listFromCategory = false;
+
+        if (!String.IsNullOrEmpty(currentCategory.Item1) && currentCategory.Item1 == region.RegionName && currentCategory.Item2 != 0)
+            listFromCategory = true;
+
+        var cats = CategorizeItems(region);
+
+        List<DB.SellingItem> noneCat = null;
+
+        if (cats.ContainsKey("none"))
+        {
+            noneCat = cats["none"];
+            cats.Remove("none");
+        }
+
+        var items = (listFromCategory) ? cats.Values.ElementAt(currentCategory.Item2).FindAll(i => !i.Sold) : noneCat.FindAll(i => !i.Sold);
+
+        if (noneCat == null && items.Count == 0)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage19"));
+            return;
+        }
+
+        int i = 0;
+
+        bool found = false;
+        DB.SellingItem searchedItem = null;
+
+        foreach (var item in items)
+        {
+            i++;
+
+            Item tItem = TShock.Utils.GetItemById(item.ItemID);
+
+            if (i == index || (inputName != null && (Terraria.Lang.GetItemNameValue(item.ID).StartsWith(inputName) || tItem.HoverName.ToLower().StartsWith(inputName.ToLower()) || tItem.Name.ToLower().StartsWith(inputName.ToLower()))))
+            {
+                found = true;
+                searchedItem = item;
+            }
+
+            if (found)
+            {
+                bool show = true;
+
+                foreach (int l in item.DefeatedBossesReq)
+                {
+                    if (!Shop2.DefeatedBosses.Contains(l))
+                    {
+                        show = false;
+                        break;
+                    }
+                }
+
+                if (!show)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage4"));
+                    return;
+                }
+
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage5"));
+            return;
+        }
+
+        args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmBuyMessage").SFormat("ConfirmBuyMessage1"));
+
+        if (searchedItem.Stock == 0)
+        {
+            if (searchedItem.ChestPosY == 0 && searchedItem.ChestPosX == 0)
+            {
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage9"));
+                return;
+            }
+
+            if (!TShock.Regions.InAreaRegionName(searchedItem.ChestPosX, searchedItem.ChestPosY).Contains(region.RegionName))
+            {
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage20"));
+                return;
+            }
+
+            int chest = GetChestIdByPos(searchedItem.ChestPosX, searchedItem.ChestPosY);
+
+            if (chest == -1)
+            {
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage10"));
+                return;
+            }
+
+            int stock = Main.chest[chest].item.Count(i => i.netID == searchedItem.ItemID);
+
+            if (stock == 0)
+            {
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage9"));
+                return;
+            }
+
+            if (stock < amount)
+            {
+                amount = stock;
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmBuyMessage3"));
+            }
+            if (searchedItem.Price * amount > acc.Balance)
+            {
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i/:{1}]".SFormat(searchedItem.ItemID), amount));
+                return;
+            }
+
+            if (searchedItem.PriceItemID != 0 && searchedItem.PriceItemAmount != 0)
+            {
+                if (searchedItem.PriceChestPosX == 0 && searchedItem.PriceChestPosY == 0)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage12"));
+                    return;
+                }
+
+                if (!TShock.Regions.InAreaRegionName(searchedItem.PriceChestPosX, searchedItem.PriceChestPosY).Contains(region.RegionName))
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage21"));
+                    return;
+                }
+
+                int priceChest = GetChestIdByPos(searchedItem.PriceChestPosX, searchedItem.PriceChestPosY);
+
+                if (priceChest == -1)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage13"));
+                    return;
+                }
+
+                int chestSlot = GetFreeSlotInChest(priceChest);
+
+                if (chestSlot == -1)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage14"));
+                    return;
+                }
+
+                if (args.Player.SelectedItem == null || !args.Player.SelectedItem.active || args.Player.SelectedItem.netID != searchedItem.PriceItemID || args.Player.SelectedItem.stack < searchedItem.PriceItemAmount * amount)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage11"));
+                    return;
+                }
+
+            }
+        }
+        else
+        {
+            if (searchedItem.Stock < amount)
+            {
+                amount = searchedItem.Stock;
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmBuyMessage2"));
+            }
+            if (searchedItem.Price * amount > acc.Balance)
+            {
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i:{1}]".SFormat(searchedItem.ItemID), amount));
+                return;
+            }
+
+            if (searchedItem.PriceItemID != 0 && searchedItem.PriceItemAmount != 0)
+            {
+                if (searchedItem.PriceChestPosX == 0 && searchedItem.PriceChestPosY == 0)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage12"));
+                    return;
+                }
+
+                if (!TShock.Regions.InAreaRegionName(searchedItem.PriceChestPosX, searchedItem.PriceChestPosY).Contains(region.RegionName))
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage21"));
+                    return;
+                }
+
+                int priceChest = GetChestIdByPos(searchedItem.PriceChestPosX, searchedItem.PriceChestPosY);
+
+                if (priceChest == -1)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage13"));
+                    return;
+                }
+
+                int chestSlot = GetFreeSlotInChest(priceChest);
+
+                if (chestSlot == -1)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage14"));
+                    return;
+                }
+
+                if (args.Player.SelectedItem == null || !args.Player.SelectedItem.active || args.Player.SelectedItem.netID != searchedItem.PriceItemID || args.Player.SelectedItem.stack < searchedItem.PriceItemAmount * amount)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage11"));
+                    return;
+                }
+            }
+
+        }
+
+        args.Player.SetData(Handler.COMFIRM_ACTION_DATA, (args, "buy"));
+        args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmBuyMessage4").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ConfirmSubCommand, amount, searchedItem.ItemID, ((Money)searchedItem.Price * amount).ToString()));
+    }
+    private static void SendSellConfirmMessage(CommandArgs args, DB.ShopRegion region, IBankAccount acc)
+    {
+        if (!args.Player.RealPlayer)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("NotReal"));
+            return;
+        }
+
+        if (region == null)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage1"));
+            return;
+        }
+
+        if (args.Player.Name == region.Owner)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage1"));
+            return;
+        }
+
+        if (!SEconomyPlugin.Instance.RunningJournal.BankAccounts.Any(i => i.UserAccountName == region.Owner))
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage8"));
+            return;
+        }
+
+        if (args.Player.SelectedItem == null || !args.Player.SelectedItem.active || args.Player.SelectedItem.stack == 0)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage6"));
+            return;
+        }
+
+        int itemID = args.Player.SelectedItem.netID;
+
+        (string, int) currentCategory = args.Player.GetData<(string, int)>(Handler.CATEGORY_DATA);
+
+        bool listFromCategory = false;
+
+        if (!String.IsNullOrEmpty(currentCategory.Item1) && currentCategory.Item1 == region.RegionName && currentCategory.Item2 != 0)
+            listFromCategory = true;
+
+        var cats = CategorizeItems(region);
+
+        List<DB.SellingItem> noneCat = null;
+
+        if (cats.ContainsKey("none"))
+        {
+            noneCat = cats["none"];
+            cats.Remove("none");
+        }
+
+        var items = (listFromCategory) ? cats.Values.ElementAt(currentCategory.Item2).FindAll(i => i.Sold) : noneCat.FindAll(i => i.Sold);
+
+        if (noneCat == null && items.Count == 0)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage3"));
+            return;
+        }
+;
+
+        bool found = false;
+        DB.SellingItem searchedItem = null;
+
+        foreach (var item in items)
+        {
+            if (item.ItemID == itemID)
+            {
+                found = true;
+                searchedItem = item;
+            }
+
+            if (found)
+            {
+                bool show = true;
+
+                foreach (int l in item.DefeatedBossesReq)
+                {
+                    if (!Shop2.DefeatedBosses.Contains(l))
+                    {
+                        show = false;
+                        break;
+                    }
+                }
+
+                if (!show)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage4"));
+                    return;
+                }
+
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage5"));
+            return;
+        }
+
+        args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmSellMessage5").SFormat(searchedItem.ItemID));
+
+        int amount = args.Player.SelectedItem.stack;
+
+        if (amount > searchedItem.Stock) amount = searchedItem.Stock;
+
+        if (SEconomyPlugin.Instance.RunningJournal.BankAccounts.First(i => i.UserAccountName == region.Owner).Balance < searchedItem.Price * amount)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage7"));
+            return;
+        }
+
+        if (searchedItem.ChestPosY == 0 && searchedItem.ChestPosX == 0)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage8"));
+            return;
+        }
+
+        if (!TShock.Regions.InAreaRegionName(searchedItem.ChestPosX, searchedItem.ChestPosY).Contains(region.RegionName))
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage15"));
+            return;
+        }
+
+        int chest = GetChestIdByPos(searchedItem.ChestPosX, searchedItem.ChestPosY);
+
+        if (chest == -1)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage9"));
+            return;
+        }
+
+        int chestSlot = GetFreeSlotInChest(chest);
+
+        if (chestSlot == -1)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage10"));
+            return;
+        }
+
+        args.Player.SetData(Handler.COMFIRM_ACTION_DATA, (args, "sell"));
+        args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmSellMessage6").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ConfirmSubCommand, amount, searchedItem.ItemID));
+    }
+    private static void Confrim(CommandArgs args, DB.ShopRegion region, IBankAccount acc)
+    {
+        var data = args.Player.GetData<(CommandArgs, string)>(Handler.COMFIRM_ACTION_DATA);
+
+        if(data.Item1 == null || data.Item2 == "")
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("Confirm1"));
+            return;
+        }
+
+        switch(data.Item2.ToLower())
+        {
+            case "buy":
+                Buy(data.Item1, region, acc);
+                return;
+            case "sell":
+                Sell(data.Item1, region, acc);
+                return;
+
+            default:
+                args.Player.SendInfoMessage(Shop2.FormatMessage("Confirm1"));
+                return;
         }
     }
 
-    private static void ModifyShop(CommandArgs args, DB.ShopRegion region)
+    private static void AddSellItem(CommandArgs args, DB.ShopRegion region)
+    {
+        if (!args.Player.RealPlayer)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("NotReal"));
+            return;
+        }
+
+        if (region == null)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("NotInAShop"));
+            return;
+        }
+
+        if (args.Player.Name != region.Owner)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyItemMessage1"));
+            return;
+        }
+
+        if (args.Parameters.Count < 4)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddSellItemMessage1"));
+            return;
+        }
+
+        bool success = int.TryParse(args.Parameters[1], out int itemID);
+
+        if (!success || itemID < 1 || itemID > 5455)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddSellItemMessage2"));
+            return;
+        }
+
+        success = int.TryParse(args.Parameters[2], out int amount);
+
+        if (!success || amount < 1)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddSellItemMessage3"));
+            return;
+        }
+
+        success = Money.TryParse(args.Parameters[3], out Money price);
+
+        if (!success || price < 1)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddSellItemMessage4"));
+            return;
+        }
+
+
+        if (region.SellingItems.FindAll(i => i.Sold).Any(i => i.ItemID == itemID))
+        {
+
+            var item = region.SellingItems.FindAll(i => i.Sold).First(i => i.ItemID == itemID);
+
+            item.Stock = amount;
+            item.Price = (int)price;
+
+            DB.ModifyItem(item.ID, "stock", amount);
+            DB.ModifyItem(item.ID, "price", (int)price);
+
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddSellItemMessage5"));
+            return;
+        }
+
+        string category = "";
+        if (args.Parameters.Count > 4) category = args.Parameters[4];
+
+        var id = DB.InsertItem((int)price, new List<int>(), itemID, amount, 0, 0, category, 0, 0, 0, 0, true);
+        region.SellingItems.Add(DB.GetItem(id));
+        DB.ModifyShopRegion(region.ID, "sellingitems", region.SellingItems.Select(i => i.ID).ToJson());
+
+        args.Player.SendInfoMessage(Shop2.FormatMessage("AddSellItemMessage6").SFormat(itemID, id, amount, price.ToString()));
+        args.Player.SendInfoMessage(Shop2.FormatMessage("AddSellItemMessage7").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ModifyItemsSubCommand));
+    }
+
+    private static void ModifyShop(CommandArgs args, DB.ShopRegion region, IBankAccount acc)
     {
         if (!args.Player.RealPlayer)
         {
@@ -247,7 +791,7 @@ public class Commands
                 return;
 
             case "deleteshop":
-                args.Player.SetData(Handler.MODIFY_SHOP_CONFIRM_DATA, ("delete", Shop2.Timer));
+                args.Player.SetData(Handler.MODIFY_SHOP_CONFIRM_DATA, ("delete", Shop2.Timer, region.RegionName));
 
                 var reg = TShock.Regions.Regions.FirstOrDefault(i => i.Name == region.RegionName);
 
@@ -302,7 +846,160 @@ public class Commands
 
                 if (price < 0) price = 0;
 
+                else
+                {
+                    if (acc.Balance < price)
+                    {
+                        args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage16").SFormat(price.ToString(), (width * height) - (oldregion.Area.Width * oldregion.Area.Height), ((Money)price - acc.Balance).ToString()));
+                        return;
+                    }
 
+                    acc.TransferTo(SEconomyPlugin.Instance.WorldAccount, price, BankAccountTransferOptions.AnnounceToSender | BankAccountTransferOptions.IsPayment, Shop2.Configs.Settings.Messages["ModifyShopMessage17"], Shop2.Configs.Settings.Messages["ModifyShopMessage18"].SFormat((width * height) - (oldregion.Area.Width * oldregion.Area.Height), region.RegionName));
+                }
+
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage19").SFormat(oldregion.Area.Width * oldregion.Area.Height, width * height, price.ToString()));
+                TShock.Regions.PositionRegion(region.RegionName, x, y, width, height);
+
+                return;
+
+            case "transferownership":
+
+                if (args.Parameters.Count < 3)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage20"));
+                    return;
+                }
+
+                var playername = args.Parameters[2];
+
+                if (!TShock.UserAccounts.GetUserAccounts().Any(i => i.Name == playername))
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage21").SFormat(playername));
+                    return;
+                }
+
+                args.Player.SetData<(string, long, string)>(Handler.MODIFY_SHOP_CONFIRM_DATA, ("transferownership", Shop2.Timer, playername));
+
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage22").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ModifyShopSubCommand, region.RegionName, playername));
+                return;
+
+            case "confirm":
+
+                var confirmData = args.Player.GetData<(string, long, string)>(Handler.MODIFY_SHOP_CONFIRM_DATA);
+
+                if (String.IsNullOrEmpty(confirmData.Item1))
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage23"));
+                    return;
+                }
+
+                switch (confirmData.Item1)
+                {
+                    case "delete":
+                        if (region.RegionName != confirmData.Item3)
+                        {
+                            args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage23"));
+                            return;
+                        }
+
+                        var items = region.SellingItems;
+
+                        foreach (var i in items)
+                        {
+                            if (!i.Sold && i.Stock > 0)
+                            {
+                                int amount = i.Stock;
+
+
+                                var tItem = TShock.Utils.GetItemById(i.ItemID);
+
+                                double _slotsToFill = amount / tItem.maxStack;
+                                int slotsToFill = (int)Math.Ceiling(_slotsToFill);
+                                if (amount < tItem.maxStack)
+                                    slotsToFill = 1;
+                                for (int l = 0; l < slotsToFill; l++)
+                                {
+                                    int amountToFill = tItem.maxStack;
+                                    if (l == slotsToFill - 1)
+                                        amountToFill = amount - (l * tItem.maxStack);
+
+                                    var titem = TShock.Utils.GetItemById(i.ItemID);
+                                    titem.stack = amountToFill;
+
+                                    args.Player.GiveItem(titem.netID, titem.stack);
+                                }
+                            }
+
+                            DB.RemoveItem(i.ID);
+                        }
+
+
+                        DB.regions.Remove(region);
+                        DB.RemoveShopRegion(region.ID);
+
+                        TShock.Regions.DeleteRegion(TShock.Regions.GetRegionByName(region.RegionName).ID);
+
+                        args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage24").SFormat(region.RegionName));
+
+                        return;
+
+                    case "transferownership":
+
+                        var plyName = confirmData.Item3;
+
+                        if (!TShock.UserAccounts.GetUserAccounts().Any(i => i.Name == plyName))
+                        {
+                            args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage21").SFormat(plyName));
+                            return;
+                        }
+
+                        var usr = TShock.UserAccounts.GetUserAccounts().First(i => i.Name == plyName);
+
+                        if (!TShock.Groups.groups.First(i => i.Name == usr.Group).HasPermission(Shop2.Configs.Settings.ShopOwnerPerm))
+                        {
+                            args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage25").SFormat(usr.Name));
+                            return;
+                        }
+
+                        region.Owner = usr.Name;
+                        DB.ModifyShopRegion(region.ID, "owner", usr.Name);
+                        TShock.Regions.ChangeOwner(region.RegionName, usr.Name);
+
+                        args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage26").SFormat(usr.Name, region.RegionName));
+
+                        if (TShock.Players.Any(i => i.Name == usr.Name)) TShock.Players.First(i => i.Name == usr.Name).SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage27").SFormat(region.RegionName));
+
+                        return;
+                    default:
+                        args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage23"));
+                        return;
+                }
+
+            case "trust":
+
+                if (args.Parameters.Count < 3)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage28"));
+                    return;
+                }
+
+                var ply = TShock.Players.FirstOrDefault(i => i.Name.StartsWith(args.Parameters[2]));
+
+                if (ply == null)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage29").SFormat(args.Parameters[2]));
+                    return;
+                }
+
+                if (TShock.Regions.GetRegionByName(region.RegionName).HasPermissionToBuildInRegion(ply))
+                {
+                    TShock.Regions.RemoveUser(region.RegionName, ply.Name);
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage30").SFormat(ply.Name));
+                    return;
+                }
+                
+                TShock.Regions.AddNewUser(region.RegionName, ply.Name);
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ModifyShopMessage31").SFormat(ply.Name));
                 return;
 
             default:
@@ -1083,7 +1780,7 @@ public class Commands
 
             Item tItem = TShock.Utils.GetItemById(item.ItemID);
 
-            if (i == index || (inputName != null && (tItem.HoverName.ToLower().StartsWith(inputName.ToLower()) || tItem.Name.ToLower().StartsWith(inputName.ToLower()))))
+            if (i == index || (inputName != null && (Terraria.Lang.GetItemNameValue(item.ID).StartsWith(inputName)|| tItem.HoverName.ToLower().StartsWith(inputName.ToLower()) || tItem.Name.ToLower().StartsWith(inputName.ToLower()))))
             {
                 found = true;
                 searchedItem = item;
