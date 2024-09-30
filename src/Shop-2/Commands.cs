@@ -35,9 +35,22 @@ public class Commands
             if (args.Player.HasPermission(Shop2.Configs.Settings.PlayerCommandPerm))
                 args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ListRegionSubCommand));
 
-            if (region != null && args.Player.HasPermission(Shop2.Configs.Settings.PlayerCommandPerm))
-                args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp1").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ListItemsSubCommand));
+            if (args.Player.HasPermission(Shop2.Configs.Settings.ShopOwnerPerm))
+                args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp2").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.CreateShopSubCommand));
 
+            if (region != null && args.Player.HasPermission(Shop2.Configs.Settings.PlayerCommandPerm)) {
+                args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp1").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ListItemsSubCommand));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp3").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.CategorySubCommand));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp4").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.BuyItemsSubCommand));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp5").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.SellSubCommand));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp6").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ConfirmSubCommand));
+            }
+
+            if (region != null && args.Player.HasPermission(Shop2.Configs.Settings.ShopOwnerPerm) && args.Player.Name == region.Owner)
+            {
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ShopOwnerCommandHelp7").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.AddBuyItemsSubCommand));
+
+            }
             return;
         }
 
@@ -82,7 +95,7 @@ public class Commands
             && (subCommand == Shop2.Configs.Settings.SellSubCommand
             || subCommand == "s"))
         {
-            SendSellConfirmMessage(args, region, acc);
+            Sell(args, region, acc);
             return;
         }
 
@@ -413,149 +426,6 @@ public class Commands
         args.Player.SetData(Handler.COMFIRM_ACTION_DATA, (args, "buy"));
         args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmBuyMessage4").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ConfirmSubCommand, amount, searchedItem.ItemID, ((Money)searchedItem.Price * amount).ToString()));
     }
-    private static void SendSellConfirmMessage(CommandArgs args, DB.ShopRegion region, IBankAccount acc)
-    {
-        if (!args.Player.RealPlayer)
-        {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("NotReal"));
-            return;
-        }
-
-        if (region == null)
-        {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage1"));
-            return;
-        }
-
-        if (args.Player.Name == region.Owner)
-        {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage1"));
-            return;
-        }
-
-        if (!SEconomyPlugin.Instance.RunningJournal.BankAccounts.Any(i => i.UserAccountName == region.Owner))
-        {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage8"));
-            return;
-        }
-
-        if (args.Player.SelectedItem == null || !args.Player.SelectedItem.active || args.Player.SelectedItem.stack == 0)
-        {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage6"));
-            return;
-        }
-
-        int itemID = args.Player.SelectedItem.netID;
-
-        (string, int) currentCategory = args.Player.GetData<(string, int)>(Handler.CATEGORY_DATA);
-
-        bool listFromCategory = false;
-
-        if (!String.IsNullOrEmpty(currentCategory.Item1) && currentCategory.Item1 == region.RegionName && currentCategory.Item2 != 0)
-            listFromCategory = true;
-
-        var cats = CategorizeItems(region);
-
-        List<DB.SellingItem> noneCat = null;
-
-        if (cats.ContainsKey("none"))
-        {
-            noneCat = cats["none"];
-            cats.Remove("none");
-        }
-
-        var items = (listFromCategory) ? cats.Values.ElementAt(currentCategory.Item2).FindAll(i => i.Sold) : noneCat.FindAll(i => i.Sold);
-
-        if (noneCat == null && items.Count == 0)
-        {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage3"));
-            return;
-        }
-;
-
-        bool found = false;
-        DB.SellingItem searchedItem = null;
-
-        foreach (var item in items)
-        {
-            if (item.ItemID == itemID)
-            {
-                found = true;
-                searchedItem = item;
-            }
-
-            if (found)
-            {
-                bool show = true;
-
-                foreach (int l in item.DefeatedBossesReq)
-                {
-                    if (!Shop2.DefeatedBosses.Contains(l))
-                    {
-                        show = false;
-                        break;
-                    }
-                }
-
-                if (!show)
-                {
-                    args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage4"));
-                    return;
-                }
-
-                break;
-            }
-        }
-
-        if (!found)
-        {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage5"));
-            return;
-        }
-
-        args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmSellMessage5").SFormat(searchedItem.ItemID));
-
-        int amount = args.Player.SelectedItem.stack;
-
-        if (amount > searchedItem.Stock) amount = searchedItem.Stock;
-
-        if (SEconomyPlugin.Instance.RunningJournal.BankAccounts.First(i => i.UserAccountName == region.Owner).Balance < searchedItem.Price * amount)
-        {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage7"));
-            return;
-        }
-
-        if (searchedItem.ChestPosY == 0 && searchedItem.ChestPosX == 0)
-        {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage8"));
-            return;
-        }
-
-        if (!TShock.Regions.InAreaRegionName(searchedItem.ChestPosX, searchedItem.ChestPosY).Contains(region.RegionName))
-        {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage15"));
-            return;
-        }
-
-        int chest = GetChestIdByPos(searchedItem.ChestPosX, searchedItem.ChestPosY);
-
-        if (chest == -1)
-        {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage9"));
-            return;
-        }
-
-        int chestSlot = GetFreeSlotInChest(chest);
-
-        if (chestSlot == -1)
-        {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage10"));
-            return;
-        }
-
-        args.Player.SetData(Handler.COMFIRM_ACTION_DATA, (args, "sell"));
-        args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmSellMessage6").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ConfirmSubCommand, amount, searchedItem.ItemID));
-    }
     private static void Confrim(CommandArgs args, DB.ShopRegion region, IBankAccount acc)
     {
         var data = args.Player.GetData<(CommandArgs, string)>(Handler.COMFIRM_ACTION_DATA);
@@ -570,9 +440,7 @@ public class Commands
         {
             case "buy":
                 Buy(data.Item1, region, acc);
-                return;
-            case "sell":
-                Sell(data.Item1, region, acc);
+                args.Player.SetData(Handler.MODIFY_SHOP_CONFIRM_DATA, ("", 0, ""));
                 return;
 
             default:
@@ -2089,7 +1957,7 @@ public class Commands
 
         if (inputCat != null)
         {
-            choosenCat = catNames.FirstOrDefault(i => i.ToLower().StartsWith(inputCat.ToLower()));
+            choosenCat = catNames.FirstOrDefault(i => i.StartsWith(inputCat));
 
             if (choosenCat == null)
             {

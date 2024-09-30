@@ -79,8 +79,9 @@ public class Shop2 : TerrariaPlugin
     public void OnGamePostInitialize(EventArgs args)
     {
         /**
-         * code to check for defeated bosses, copied from soof's bagger plugin
-         * (thank you soof for your works)
+         * code to check for defeated bosses, from soof's bagger plugin
+         * https://github.com/Soof4/Bagger/blob/main/Bagger/Bagger.cs
+         * (Go check soof's plugins' code they are good resource to learn)
          */
 
         DefeatedBosses.Clear();

@@ -1,3 +1,5 @@
 - Trade command
 - global shop
 - rotation shop
+- search
+- confirm for sell
