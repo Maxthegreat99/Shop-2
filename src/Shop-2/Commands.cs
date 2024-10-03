@@ -49,8 +49,13 @@ public class Commands
             if (region != null && args.Player.HasPermission(Shop2.Configs.Settings.ShopOwnerPerm) && args.Player.Name == region.Owner)
             {
                 args.Player.SendInfoMessage(Shop2.FormatMessage("ShopOwnerCommandHelp7").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.AddBuyItemsSubCommand));
-
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ShopOwnerCommandHelp8").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.AddSellItemSubCommand));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ShopOwnerCommandHelp9").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ModifyItemsSubCommand));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("ShopOwnerCommandHelp10").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ModifyShopSubCommand));
             }
+
+            args.Player.SendInfoMessage(Shop2.FormatMessage("ShopOwnerCommandHelp11"));
+
             return;
         }
 
@@ -95,7 +100,7 @@ public class Commands
             && (subCommand == Shop2.Configs.Settings.SellSubCommand
             || subCommand == "s"))
         {
-            Sell(args, region, acc);
+            SendSellConfirmMessage(args, region, acc);
             return;
         }
 
@@ -147,6 +152,33 @@ public class Commands
             return;
         }
 
+
+        if (args.Player.HasPermission(Shop2.Configs.Settings.PlayerCommandPerm))
+            args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ListRegionSubCommand));
+
+        if (args.Player.HasPermission(Shop2.Configs.Settings.ShopOwnerPerm))
+            args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp2").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.CreateShopSubCommand));
+
+        if (region != null && args.Player.HasPermission(Shop2.Configs.Settings.PlayerCommandPerm))
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp1").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ListItemsSubCommand));
+            args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp3").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.CategorySubCommand));
+            args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp4").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.BuyItemsSubCommand));
+            args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp5").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.SellSubCommand));
+            args.Player.SendInfoMessage(Shop2.FormatMessage("PlayerCommandHelp6").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ConfirmSubCommand));
+        }
+
+        if (region != null && args.Player.HasPermission(Shop2.Configs.Settings.ShopOwnerPerm) && args.Player.Name == region.Owner)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("ShopOwnerCommandHelp7").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.AddBuyItemsSubCommand));
+            args.Player.SendInfoMessage(Shop2.FormatMessage("ShopOwnerCommandHelp8").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.AddSellItemSubCommand));
+            args.Player.SendInfoMessage(Shop2.FormatMessage("ShopOwnerCommandHelp9").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ModifyItemsSubCommand));
+            args.Player.SendInfoMessage(Shop2.FormatMessage("ShopOwnerCommandHelp10").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ModifyShopSubCommand));
+        }
+
+        args.Player.SendInfoMessage(Shop2.FormatMessage("ShopOwnerCommandHelp11"));
+
+        return;
     }
 
     // performs the requirement checks for the item and sends to the player a confirmation for the player to see if the item they typed was infact what they were trying to buy
@@ -236,7 +268,13 @@ public class Commands
             cats.Remove("none");
         }
 
-        var items = (listFromCategory) ? cats.Values.ElementAt(currentCategory.Item2).FindAll(i => !i.Sold) : noneCat.FindAll(i => !i.Sold);
+        if (!listFromCategory && noneCat == null)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage22"));
+            return;
+        }
+
+        var items = (listFromCategory) ? cats.Values.ElementAt(currentCategory.Item2 - 1).FindAll(i => !i.Sold) : noneCat.FindAll(i => !i.Sold);
 
         if (noneCat == null && items.Count == 0)
         {
@@ -290,7 +328,7 @@ public class Commands
             return;
         }
 
-        args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmBuyMessage").SFormat("ConfirmBuyMessage1"));
+        args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmBuyMessage1").SFormat(searchedItem.ItemID));
 
         if (searchedItem.Stock == 0)
         {
@@ -314,7 +352,10 @@ public class Commands
                 return;
             }
 
-            int stock = Main.chest[chest].item.Count(i => i.netID == searchedItem.ItemID);
+            int stock = 0;
+
+            foreach (var k in Main.chest[chest].item)
+                if (k.netID == searchedItem.ItemID && k.stack > 0 && k.active != false) stock += k.stack;
 
             if (stock == 0)
             {
@@ -329,7 +370,7 @@ public class Commands
             }
             if (searchedItem.Price * amount > acc.Balance)
             {
-                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i/:{1}]".SFormat(searchedItem.ItemID), amount));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i:{0}]".SFormat(searchedItem.ItemID), amount));
                 return;
             }
 
@@ -380,7 +421,7 @@ public class Commands
             }
             if (searchedItem.Price * amount > acc.Balance)
             {
-                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i:{1}]".SFormat(searchedItem.ItemID), amount));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i:{0}]".SFormat(searchedItem.ItemID), amount));
                 return;
             }
 
@@ -424,7 +465,7 @@ public class Commands
         }
 
         args.Player.SetData(Handler.COMFIRM_ACTION_DATA, (args, "buy"));
-        args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmBuyMessage4").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ConfirmSubCommand, amount, searchedItem.ItemID, ((Money)searchedItem.Price * amount).ToString()));
+        args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmBuyMessage4").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ConfirmSubCommand, amount, searchedItem.ItemID, ((Money)(searchedItem.Price * amount)).ToString()));
     }
     private static void Confrim(CommandArgs args, DB.ShopRegion region, IBankAccount acc)
     {
@@ -440,7 +481,12 @@ public class Commands
         {
             case "buy":
                 Buy(data.Item1, region, acc);
-                args.Player.SetData(Handler.MODIFY_SHOP_CONFIRM_DATA, ("", 0, ""));
+                args.Player.SetData(Handler.MODIFY_SHOP_CONFIRM_DATA, ("", (long)0, ""));
+                return;
+
+            case "sell":
+                Sell(data.Item1, region, acc);
+                args.Player.SetData(Handler.MODIFY_SHOP_CONFIRM_DATA, ("", (long)0, ""));
                 return;
 
             default:
@@ -465,7 +511,7 @@ public class Commands
 
         if (args.Player.Name != region.Owner)
         {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyItemMessage1"));
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyMessage1"));
             return;
         }
 
@@ -525,7 +571,149 @@ public class Commands
         args.Player.SendInfoMessage(Shop2.FormatMessage("AddSellItemMessage6").SFormat(itemID, id, amount, price.ToString()));
         args.Player.SendInfoMessage(Shop2.FormatMessage("AddSellItemMessage7").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ModifyItemsSubCommand));
     }
+    private static void SendSellConfirmMessage(CommandArgs args, DB.ShopRegion region, IBankAccount acc)
+    {
+        if (!args.Player.RealPlayer)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("NotReal"));
+            return;
+        }
 
+        if (region == null)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage1"));
+            return;
+        }
+
+        if (args.Player.Name == region.Owner)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage1"));
+            return;
+        }
+
+        if (!SEconomyPlugin.Instance.RunningJournal.BankAccounts.Any(i => i.UserAccountName == region.Owner))
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage8"));
+            return;
+        }
+
+        if (args.Player.SelectedItem == null || !args.Player.SelectedItem.active || args.Player.SelectedItem.stack == 0)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage6"));
+            return;
+        }
+
+        int itemID = args.Player.SelectedItem.netID;
+
+        (string, int) currentCategory = args.Player.GetData<(string, int)>(Handler.CATEGORY_DATA);
+
+        bool listFromCategory = false;
+
+        if (!String.IsNullOrEmpty(currentCategory.Item1) && currentCategory.Item1 == region.RegionName && currentCategory.Item2 != 0)
+            listFromCategory = true;
+
+        var cats = CategorizeItems(region);
+
+        List<DB.SellingItem> noneCat = null;
+
+        if (cats.ContainsKey("none"))
+        {
+            noneCat = cats["none"];
+            cats.Remove("none");
+        }
+
+        var items = (listFromCategory) ? cats.Values.ElementAt(currentCategory.Item2 - 1).FindAll(i => i.Sold) : noneCat.FindAll(i => i.Sold);
+
+        if (noneCat == null && items.Count == 0)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage3"));
+            return;
+        }
+;
+
+        bool found = false;
+        DB.SellingItem searchedItem = null;
+
+        foreach (var item in items)
+        {
+            if (item.ItemID == itemID)
+            {
+                found = true;
+                searchedItem = item;
+            }
+
+            if (found)
+            {
+                bool show = true;
+
+                foreach (int l in item.DefeatedBossesReq)
+                {
+                    if (!Shop2.DefeatedBosses.Contains(l))
+                    {
+                        show = false;
+                        break;
+                    }
+                }
+
+                if (!show)
+                {
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage4"));
+                    return;
+                }
+
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage5"));
+            return;
+        }
+
+        args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmSellMessage5").SFormat(searchedItem.ItemID));
+
+        int amount = args.Player.SelectedItem.stack;
+
+        if (amount > searchedItem.Stock) amount = searchedItem.Stock;
+
+        if (SEconomyPlugin.Instance.RunningJournal.BankAccounts.First(i => i.UserAccountName == region.Owner).Balance < searchedItem.Price * amount)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage7"));
+            return;
+        }
+
+        if (searchedItem.ChestPosY == 0 && searchedItem.ChestPosX == 0)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage8"));
+            return;
+        }
+
+        if (!TShock.Regions.InAreaRegionName(searchedItem.ChestPosX, searchedItem.ChestPosY).Contains(region.RegionName))
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage15"));
+            return;
+        }
+
+        int chest = GetChestIdByPos(searchedItem.ChestPosX, searchedItem.ChestPosY);
+
+        if (chest == -1)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage9"));
+            return;
+        }
+
+        int chestSlot = GetFreeSlotInChest(chest);
+
+        if (chestSlot == -1)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("SellMessage10"));
+            return;
+        }
+
+        args.Player.SetData(Handler.COMFIRM_ACTION_DATA, (args, "sell"));
+        args.Player.SendInfoMessage(Shop2.FormatMessage("ConfirmSellMessage6").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.ConfirmSubCommand, amount, searchedItem.ItemID));
+    }
     private static void ModifyShop(CommandArgs args, DB.ShopRegion region, IBankAccount acc)
     {
         if (!args.Player.RealPlayer)
@@ -542,7 +730,7 @@ public class Commands
 
         if (args.Player.Name != region.Owner && !args.Player.HasPermission(Shop2.Configs.Settings.AdminCommandPerm))
         {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyItemMessage1"));
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyMessage1"));
             return;
         }
 
@@ -892,7 +1080,7 @@ public class Commands
 
         if (args.Player.Name != region.Owner && !args.Player.HasPermission(Shop2.Configs.Settings.AdminCommandPerm))
         {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyItemMessage1"));
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyMessage1"));
             return;
         }
 
@@ -1109,7 +1297,7 @@ public class Commands
                     return;
                 }
 
-                if (set == 2 && args.Player.GetData<(bool, int, int)>(Handler.SET_SHOP_POINT_1_DATA).Item2 == -1 || args.Player.GetData<(bool, int, int)>(Handler.SET_SHOP_POINT_1_DATA).Item3 == -1)
+                if (set == 2 && ( args.Player.GetData<(bool, int, int)>(Handler.SET_SHOP_POINT_1_DATA).Item2 == -1 || args.Player.GetData<(bool, int, int)>(Handler.SET_SHOP_POINT_1_DATA).Item3 == -1))
                 {
                     args.Player.SendInfoMessage(Shop2.FormatMessage("CreateShopMessage3"));
                     return;
@@ -1125,10 +1313,11 @@ public class Commands
                 else
                 {
                     args.Player.SetData(Handler.SET_SHOP_POINT_2_DATA, (true, -1, -1));
+                    args.Player.SendInfoMessage(Shop2.FormatMessage("CreateShopMessage5"));
                     return;
                 }
 
-            case "comfirm":
+            case "confirm":
 
                 if (args.Parameters.Count < 3)
                 {
@@ -1239,7 +1428,7 @@ public class Commands
 
         if (args.Player.Name != region.Owner)
         {
-            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyItemMessage1"));
+            args.Player.SendInfoMessage(Shop2.FormatMessage("AddBuyMessage1"));
             return;
         }
 
@@ -1406,7 +1595,7 @@ public class Commands
             cats.Remove("none");
         }
 
-        var items = (listFromCategory) ? cats.Values.ElementAt(currentCategory.Item2).FindAll(i => i.Sold) : noneCat.FindAll(i => i.Sold);
+        var items = (listFromCategory) ? cats.Values.ElementAt(currentCategory.Item2 - 1).FindAll(i => i.Sold) : noneCat.FindAll(i => i.Sold);
 
         if (noneCat == null && items.Count == 0)
         {
@@ -1629,7 +1818,13 @@ public class Commands
             cats.Remove("none");
         }
 
-        var items = (listFromCategory) ? cats.Values.ElementAt(currentCategory.Item2).FindAll(i => !i.Sold) : noneCat.FindAll(i => !i.Sold);
+        if (!listFromCategory && noneCat == null)
+        {
+            args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage22"));
+            return;
+        }
+
+        var items = (listFromCategory) ? cats.Values.ElementAt(currentCategory.Item2 - 1).FindAll(i => !i.Sold) : noneCat.FindAll(i => !i.Sold);
 
         if (noneCat == null && items.Count == 0)
         {
@@ -1683,6 +1878,8 @@ public class Commands
             return;
         }
 
+        bool itemsGottenFromChest = false;
+
         List<Item> itemsToGive = new();
         if (searchedItem.Stock == 0)
         {
@@ -1706,8 +1903,11 @@ public class Commands
                 return;
             }
 
-            int stock = Main.chest[chest].item.Count(i => i.netID == searchedItem.ItemID);
-
+            int stock = 0;
+            
+            foreach (var k in Main.chest[chest].item)
+                if (k.netID == searchedItem.ItemID && k.stack > 0 && k.active != false) stock += k.stack;
+                
             if (stock == 0)
             {
                 args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage9"));
@@ -1718,7 +1918,7 @@ public class Commands
 
             if (searchedItem.Price * amount > acc.Balance)
             {
-                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i/:{1}]".SFormat(searchedItem.ItemID), amount));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i:{0}]".SFormat(searchedItem.ItemID), amount));
                 return;
             }
 
@@ -1800,6 +2000,8 @@ public class Commands
 
                 DeleteItemsFromChest(chest, j.netID, j.stack);
             }
+
+            itemsGottenFromChest = true;
         }
         else
         {
@@ -1807,7 +2009,7 @@ public class Commands
 
             if (searchedItem.Price * amount > acc.Balance)
             {
-                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i:{1}]".SFormat(searchedItem.ItemID), amount));
+                args.Player.SendInfoMessage(Shop2.FormatMessage("BuyMessage6").SFormat(((Money)(searchedItem.Price * amount - acc.Balance)).ToString(), "[i:{0}]".SFormat(searchedItem.ItemID), amount));
                 return;
             }
 
@@ -1896,11 +2098,13 @@ public class Commands
         foreach (var l in itemsToGive)
             args.Player.GiveItem(l.netID, l.stack, l.prefix);
 
-        args.Player.SendSuccessMessage(Shop2.FormatMessage("BuyMessage17").SFormat(amount, searchedItem.ItemID, ((Money)amount * searchedItem.Price).ToString()) + ((searchedItem.PriceItemID != 0) ? $" + {searchedItem.PriceItemAmount * amount} [i:{searchedItem.PriceItemID}]" : ""));
+        args.Player.SendSuccessMessage(Shop2.FormatMessage("BuyMessage17").SFormat(amount, searchedItem.ItemID, ((Money)(amount * searchedItem.Price)).ToString()) + ((searchedItem.PriceItemID != 0) ? $" + {searchedItem.PriceItemAmount * amount} [i:{searchedItem.PriceItemID}]" : ""));
 
         args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage5").SFormat(acc.Balance.ToString()));
 
         TShock.Log.Write(Shop2.FormatMessage("BuyMessage18").SFormat(args.Player.Name, amount, Terraria.Lang.GetItemNameValue(searchedItem.ItemID), region.RegionName, amount * searchedItem.Price), System.Diagnostics.TraceLevel.Info);
+
+        if (itemsGottenFromChest) return;
 
         searchedItem.Stock -= amount;
 
@@ -1964,6 +2168,8 @@ public class Commands
                 args.Player.SendInfoMessage(Shop2.FormatMessage("CategoryMessage1").SFormat(inputCat));
                 return;
             }
+
+            index = catNames.ToList().IndexOf(choosenCat) + 1;
         }
         else
         {
@@ -1979,7 +2185,7 @@ public class Commands
 
         var items = (choosenCat == "Default") ? noneCat : cats[choosenCat];
 
-        args.Player.SetData<(string, int)>(Handler.CATEGORY_DATA, (region.RegionName, (index == 0) ? 0 : index - 1));
+        args.Player.SetData<(string, int)>(Handler.CATEGORY_DATA, (region.RegionName, index));
 
         args.Player.SendInfoMessage(Shop2.FormatMessage("CategoryMessage3").SFormat(choosenCat));
 
@@ -2013,6 +2219,8 @@ public class Commands
 
             if (noneCat != null)
             {
+                if (cats.Count == 0) args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage17").SFormat(region.RegionName));
+
                 args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage8"));
 
                 SendListItems(args, region, acc, noneCat);
@@ -2022,7 +2230,7 @@ public class Commands
 
     private static void ListRegions(CommandArgs args)
     {
-        int page = 0;
+        int page = 1;
         if (args.Parameters.Count > 1)
         {
             try
@@ -2031,9 +2239,11 @@ public class Commands
             }
             catch (Exception e)
             {
-                page = 0;
+                page = 1;
             }
         }
+
+        if (page < 1) page = 1;
 
         List<string> list = new List<string>();
 
@@ -2086,7 +2296,7 @@ public class Commands
 
         if (listFromCategory)
         {
-            var chosenCat = cats.ToList().ElementAt(currentCategory.Item2);
+            var chosenCat = cats.ToList().ElementAt(currentCategory.Item2 - 1);
             args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage2").SFormat(chosenCat.Key, region.RegionName));
 
             SendListItems(args, region, acc, chosenCat.Value);
@@ -2108,7 +2318,7 @@ public class Commands
                 foreach (var cat in cats)
                 {
                     i++;
-                    args.Player.SendInfoMessage("- {0}. 【{1}】".SFormat(i, cat));
+                    args.Player.SendInfoMessage("- {0}. 【{1}】".SFormat(i, cat.Key));
                 }
                 args.Player.SendInfoMessage(Shop2.FormatMessage("ListItemsMessage9").SFormat(TShock.Config.Settings.CommandSpecifier, Shop2.Configs.Settings.ShopCommand, Shop2.Configs.Settings.CategorySubCommand));
             }
@@ -2176,8 +2386,8 @@ public class Commands
             Money buyingPriceToShow = item.Price;
 
             string priceShown = (item.PriceItemID == 0) ? Shop2.Configs.Settings.Messages["ListItemsMessage10"] : Shop2.Configs.Settings.Messages["ListItemsMessage10"] + " [i/s{0}:{1}] +".SFormat(item.PriceItemAmount, item.PriceItemID);
-            string itemShown = string.Format("[i:{1}]", item.ItemID);
-            args.Player.SendInfoMessage("- {0} [{1}] - ([c/{2}:{3}]) [c/{4}:{5}] {6}" + ((region.Owner == args.Player.Name || args.Player.HasPermission(Shop2.Configs.Settings.AdminCommandPerm)) ? Shop2.Configs.Settings.Messages["ListItemsMessage6"].SFormat(item.ID, item.Stock) : ""), i, itemShown,
+            string itemShown = string.Format("[i:{0}]", item.ItemID);
+            args.Player.SendInfoMessage("- {0} 【{1}】 - ([c/{2}:{3}]) [c/{4}:{5}] {6}" + ((region.Owner == args.Player.Name || args.Player.HasPermission(Shop2.Configs.Settings.AdminCommandPerm)) ? Shop2.Configs.Settings.Messages["ListItemsMessage6"].SFormat(item.ID, item.Stock) : ""), i, itemShown,
                                         Microsoft.Xna.Framework.Color.Gold.Hex3(), tItem.HoverName,
                                         Microsoft.Xna.Framework.Color.Magenta.Hex3(),
                                         priceShown,
@@ -2223,8 +2433,8 @@ public class Commands
             Money buyingPriceToShow = item.Price;
 
             string priceShown = Shop2.Configs.Settings.Messages["ListItemsMessage13"];
-            string itemShown = string.Format("[i:{1}]", item.ItemID);
-            args.Player.SendInfoMessage("- {0} [{1}] - ([c/{2}:{3}]) [c/{4}:{5}] {6}" + ((region.Owner == args.Player.Name || args.Player.HasPermission(Shop2.Configs.Settings.AdminCommandPerm)) ? Shop2.Configs.Settings.Messages["ListItemsMessage14"].SFormat(item.ID, item.Stock) : ""), i, itemShown,
+            string itemShown = string.Format("[i:{0}]", item.ItemID);
+            args.Player.SendInfoMessage("- {0} 【{1}】 - ([c/{2}:{3}]) [c/{4}:{5}] {6}" + ((region.Owner == args.Player.Name || args.Player.HasPermission(Shop2.Configs.Settings.AdminCommandPerm)) ? Shop2.Configs.Settings.Messages["ListItemsMessage14"].SFormat(item.ID, item.Stock) : ""), i, itemShown,
                                         Microsoft.Xna.Framework.Color.Gold.Hex3(), tItem.HoverName,
                                         Microsoft.Xna.Framework.Color.Magenta.Hex3(),
                                         priceShown,
@@ -2243,7 +2453,7 @@ public class Commands
     {
         for (int i = 0; i < Main.maxChests; i++)
         {
-            if (Main.chest[i] != null && Main.chest[i].x == x && Main.chest[i].y == y)
+            if (Main.chest[i] != null && ((Main.chest[i].x == x && Main.chest[i].y == y) || (Main.chest[i].x + 1 == x && Main.chest[i].y == y) || (Main.chest[i].x == x && Main.chest[i].y + 1 == y) || (Main.chest[i].x + 1 == x && Main.chest[i].y + 1 == y)))
             {
                 return i;
             }

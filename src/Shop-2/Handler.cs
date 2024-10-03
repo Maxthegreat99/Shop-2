@@ -14,6 +14,7 @@ public class Handler
     public const string SET_SHOP_POINT_2_DATA = "setshop2";
     public const string MODIFY_SHOP_CONFIRM_DATA = "modifyshopconfirm";
     public const string COMFIRM_ACTION_DATA = "confirmactiondata";
+    public const string LAST_SHOP_ACCESSED = "lastshopaccessed";
 
     public static void OnNetGreet(GreetPlayerEventArgs args)
     {
@@ -32,9 +33,11 @@ public class Handler
         TShock.Players.ElementAt(args.Who).SetData(SET_SHOP_POINT_1_DATA, (false, -1, -1));
         TShock.Players.ElementAt(args.Who).SetData(SET_SHOP_POINT_2_DATA, (false, -1, -1));
         // confirm type, time
-        TShock.Players.ElementAt(args.Who).SetData<(string, long, string)>(MODIFY_SHOP_CONFIRM_DATA, ("", 0, ""));
+        TShock.Players.ElementAt(args.Who).SetData<(string, long, string)>(MODIFY_SHOP_CONFIRM_DATA, ("", (long)0, ""));
         // command, command type
         TShock.Players.ElementAt(args.Who).SetData<(CommandArgs, string)>(COMFIRM_ACTION_DATA, (null, ""));
+        // shop name
+        TShock.Players.ElementAt(args.Who).SetData<string>(LAST_SHOP_ACCESSED, "");
     }
 
     public static void OnGameUpdate(EventArgs args)
@@ -43,13 +46,38 @@ public class Handler
 
         foreach (var p in TShock.Players)
         {
+            if (p == null || !p.RealPlayer) continue;
+
             var modifyShopData = p.GetData<(string, long, string)>(MODIFY_SHOP_CONFIRM_DATA);
 
             if (modifyShopData.Item1 == "") continue;
 
             // if time passed is greater than 20 seconds
             if (Shop2.Timer - modifyShopData.Item2 > 1200)
-                p.SetData(MODIFY_SHOP_CONFIRM_DATA, ("", 0, ""));
+                p.SetData(MODIFY_SHOP_CONFIRM_DATA, ("", (long)0, ""));
+
+            if (Shop2.Timer % 200 == 0)
+            {
+                var shopName = p.GetData<string>(LAST_SHOP_ACCESSED);
+
+                var regions = TShock.Regions.InAreaRegionName((int)p.LastNetPosition.X, (int)p.LastNetPosition.Y);
+
+                foreach (var r in regions)
+                {
+                    if (r != shopName && DB.regions.Any(i => i.RegionName == r))
+                    {
+
+                        var shop = DB.regions.First(i => i.RegionName == r);
+
+                        p.SetData(LAST_SHOP_ACCESSED, r);
+                        if (shop.Owner != p.Name)
+                            p.SendInfoMessage(Shop2.FormatMessage("Greet").SFormat(r, shop.Greet));
+                        else
+                            p.SendInfoMessage(Shop2.FormatMessage("Greet1").SFormat(r, p.Name));
+                        break;
+                    }
+                }
+            }
 
 
         }

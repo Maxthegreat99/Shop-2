@@ -52,10 +52,14 @@ public class Shop2 : TerrariaPlugin
         GetDataHandlers.Sign += Handler.OnSignChange;
         GetDataHandlers.SignRead += Handler.OnSignRead;
 
-        TShockAPI.Commands.ChatCommands.Add(new Command(
+        var storeCMD = new Command(
             permissions: new List<string> { Configs.Settings.ShopPerm, },
             cmd: Commands.store,
-            Configs.Settings.ShopCommand, "str"));
+            Configs.Settings.ShopCommand, "str");
+        storeCMD.HelpDesc = new string[] { Configs.Settings.Messages["Help"]};
+        storeCMD.HelpText = Configs.Settings.Messages["Help"];
+        
+        TShockAPI.Commands.ChatCommands.Add(storeCMD);
     }
 
     private void OnReload(ReloadEventArgs args)
@@ -109,7 +113,7 @@ public class Shop2 : TerrariaPlugin
 
         Timer = 0;
 
-        TShock.Log.ConsoleInfo("Shop-2 by Maxthegreat99 successfully loaded {0} shop regions in!".SFormat(DB.regions.Count));
+        TShock.Log.ConsoleInfo("Thank you for using the Shop-2 plugin by Maxthegreat99! The plugin successfully loaded {0} shop regions in!".SFormat(DB.regions.Count));
         TShock.Log.ConsoleInfo("Consider joining the discord for support: https://discord.gg/e465y7Xeba");
         TShock.Log.ConsoleInfo("Do /{0} ingame to get started with the Shop2 plugin, for more help using the plugin go check: https://github.com/Maxthegreat99/Shop-2".SFormat(Configs.Settings.ShopCommand));
     }
