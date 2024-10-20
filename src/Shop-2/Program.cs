@@ -151,8 +151,8 @@ public class Shop2 : TerrariaPlugin
         base.Dispose(disposing);
     }
 
-    public static string FormatMessage(string str)
+    public static string FormatMessage(string str, bool prefix = true)
     {
-        return "[Shop2] " + Configs.Settings.Messages[str];
+        return (prefix) ? "[c/FFA756:【Shop2】] " + Configs.Settings.Messages[str] : Configs.Settings.Messages[str];
     }
 }

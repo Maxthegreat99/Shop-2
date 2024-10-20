@@ -48,22 +48,20 @@ public class Handler
         {
             if (p == null || !p.RealPlayer) continue;
 
-            var modifyShopData = p.GetData<(string, long, string)>(MODIFY_SHOP_CONFIRM_DATA);
-
-            if (modifyShopData.Item1 == "") continue;
-
-            // if time passed is greater than 20 seconds
-            if (Shop2.Timer - modifyShopData.Item2 > 1200)
-                p.SetData(MODIFY_SHOP_CONFIRM_DATA, ("", (long)0, ""));
-
             if (Shop2.Timer % 200 == 0)
             {
                 var shopName = p.GetData<string>(LAST_SHOP_ACCESSED);
 
-                var regions = TShock.Regions.InAreaRegionName((int)p.LastNetPosition.X, (int)p.LastNetPosition.Y);
+                var regions = TShock.Regions.InAreaRegionName((int)p.TileX, (int)p.TileY);
+
+                bool none = false;
+                if (!regions.Any(i => i == shopName))
+                    p.SetData(LAST_SHOP_ACCESSED, "");
+                
 
                 foreach (var r in regions)
                 {
+
                     if (r != shopName && DB.regions.Any(i => i.RegionName == r))
                     {
 
@@ -78,6 +76,14 @@ public class Handler
                     }
                 }
             }
+
+            var modifyShopData = p.GetData<(string, long, string)>(MODIFY_SHOP_CONFIRM_DATA);
+
+            if (modifyShopData.Item1 == "") continue;
+
+            // if time passed is greater than 20 seconds
+            if (Shop2.Timer - modifyShopData.Item2 > 1200)
+                p.SetData(MODIFY_SHOP_CONFIRM_DATA, ("", (long)0, ""));
 
 
         }

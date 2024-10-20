@@ -2,3 +2,5 @@
 - global shop
 - rotation shop
 - search
+- restock chest
+- global access to shops
