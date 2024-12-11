@@ -258,8 +258,6 @@ public class Handler
 
     public static void OnSignChange(object? sender, GetDataHandlers.SignEventArgs e)
     {
-        if (e.Handled)
-            return;
 
         e.Data.Seek(0, SeekOrigin.Begin);
         int signId = e.Data.ReadInt16();
@@ -273,7 +271,7 @@ public class Handler
         if (!text.ToLower().StartsWith("[shop]")) return;
 
         // concept from ComfyEconomy, allow mobile players to create nl characters via semicolons
-        text.Replace(";", "\n");
+        text = text.Replace(";", "\n");
 
         DB.ShopRegion reg = null;
         foreach (var r in TShock.Regions.InAreaRegionName(X, Y))
@@ -294,9 +292,9 @@ public class Handler
 
         var item = reg.SellingItems.First(i => i.ID == ID);
 
-        text.ToLower().Replace("[price]", item.Price.ToString());
+        text = text.Replace("[price]", ((Money)item.Price).ToTextString()).Replace("[Price]", ((Money)item.Price).ToTextString());
 
-        text.ToLower().Replace("[name]", Terraria.Lang.GetItemNameValue(item.ItemID));
+        text = text.Replace("[name]", Terraria.Lang.GetItemNameValue(item.ItemID)).Replace("[Name]", Terraria.Lang.GetItemNameValue(item.ItemID));
 
         e.Player.SendInfoMessage(Shop2.FormatMessage("ShopSign1").SFormat(item.ItemID, item.ID));
 

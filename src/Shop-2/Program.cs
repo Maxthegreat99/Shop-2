@@ -54,7 +54,7 @@ public class Shop2 : TerrariaPlugin
 
         var storeCMD = new Command(
             permissions: new List<string> { Configs.Settings.ShopPerm, },
-            cmd: Commands.store,
+            cmd: StoreCommand.Store,
             Configs.Settings.ShopCommand, "str");
         storeCMD.HelpDesc = new string[] { Configs.Settings.Messages["Help"]};
         storeCMD.HelpText = Configs.Settings.Messages["Help"];

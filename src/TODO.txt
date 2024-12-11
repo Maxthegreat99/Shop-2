@@ -1,6 +1,10 @@
-- Trade command
+
+ Trade command
 - global shop
 - rotation shop
 - search
 - restock chest
 - global access to shops
+- chest shop buy
+- Shopping cart
+- set command in one

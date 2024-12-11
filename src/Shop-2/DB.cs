@@ -186,7 +186,7 @@ public class DB
                     PriceItemAmount = result.Get<int>("priceitemamount"),
                     PriceChestPosX = result.Get<int>("pricechestposx"),
                     PriceChestPosY = result.Get<int>("pricechestposy"),
-                    Sold = (result.Get<int>("sold") == 1) ? true : false
+                    Sold = (result.Get<int>("sold") == 1)
                 };
 
                 yield return item;
